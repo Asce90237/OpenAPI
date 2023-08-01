@@ -13,3 +13,4 @@ api-config
 README.md
 sql
 LICENSE
+*/src/main/resources/bootstrap.yml
