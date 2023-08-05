@@ -18,8 +18,6 @@ package com.wzy.api.provider;
 
 public interface InnerService {
 
-    String INVOKE_ERROR = "{\"code\":50003,\"message\":\"接口异常，请稍后再试或联系管理员处理！\"}";
-
     /**
      * 调用接口统计
      * @param interfaceInfoId

@@ -236,7 +236,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         long current = interfaceInfoQueryRequest.getCurrent();
         Page<AllInterfaceInfoVo> onlinePage = redisTemplateUtils.getOnlinePage(current);
         if (onlinePage!=null){
-            //加入缓存后，请求时间由原来的平均68ms ，降低到平局36ms
+            //加入缓存后，请求时间由原来的平均68ms ，降低到平均36ms
             return ResultUtils.success(onlinePage);
         }
         long size = interfaceInfoQueryRequest.getPageSize();
@@ -392,6 +392,8 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         if (one.getStatus() != 1) {
             one.setStatus(1);
             int leftNum = one.getLeftNum() + 10;
+            // 设置领取最大限制，最多只能领到30次
+            leftNum = Math.min(leftNum, 30);
             one.setLeftNum(leftNum);
             userInterfaceInfoService.updateById(one);
             interfaceInfoVo.setFlag(one.getStatus());

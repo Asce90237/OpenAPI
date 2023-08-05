@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wzy.api.provider.InnerService;
 import common.BaseResponse;
+import common.constant.CommonConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.reactivestreams.Publisher;
@@ -187,7 +188,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                                         // 打印日志
                                         log.info("响应结果：" + data);
                                         log.info("=====  {} 结束 =====", request.getId());
-                                        if (data.equals(InnerService.INVOKE_ERROR)) return bufferFactory.wrap(content);
+                                        if (data.equals(CommonConstant.INVOKE_ERROR)) return bufferFactory.wrap(content);
                                         // 7. 调用成功，接口调用次数 + 1 剩余次数 - 1 invokeCount
                                         try {
                                             boolean b = innerService.invokeCount(interfaceInfoId, userId);
