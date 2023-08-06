@@ -27,7 +27,6 @@ public class MainController {
         try {
             res = gson.toJson(ResultUtils.success(authService.mainRedirect(request)));
         } catch (Exception e) {
-            System.out.println(e.getMessage());
             res = gson.toJson(ResultUtils.error(ErrorCode.API_INVOKE_ERROR));
         }
         return res;

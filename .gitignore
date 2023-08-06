@@ -9,7 +9,6 @@ test
 api-backend.iml
 out
 gen
-api-config
 README.md
 sql
 LICENSE
