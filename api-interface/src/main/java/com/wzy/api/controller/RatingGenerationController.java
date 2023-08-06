@@ -12,21 +12,21 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.annotation.Resource;
 
 /**
- * Emoji change API
+ * 外卖评价生成器 API
  *
  */
 @RestController
-@RequestMapping("/emoji")
-public class EmojiController {
+@RequestMapping("/rating")
+public class RatingGenerationController {
 
     @Resource
     private YuCongMingClient client;
 
-    @Value("${api_interface.emoji}")
+    @Value("${api_interface.rating_generation}")
     private String modelId;
 
-    @GetMapping("/change")
-    public String emojiChange(Object name) throws Exception {
+    @GetMapping("/generation")
+    public String chatWithAI(Object name) throws Exception {
         byte[] bytes = name.toString().getBytes("iso8859-1");
         name = new String(bytes,"utf-8");
         DevChatRequest devChatRequest = new DevChatRequest();

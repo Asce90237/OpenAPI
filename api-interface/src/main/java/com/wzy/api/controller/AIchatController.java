@@ -27,12 +27,15 @@ public class AIchatController {
     @Resource
     private YuCongMingClient client;
 
+    @Value("${api_interface.ai_chat}")
+    private String modelId;
+
     @GetMapping("/chat")
     public String chatWithAI(Object name) throws Exception {
         byte[] bytes = name.toString().getBytes("iso8859-1");
         name = new String(bytes,"utf-8");
         DevChatRequest devChatRequest = new DevChatRequest();
-        devChatRequest.setModelId(1680787048375554050L);
+        devChatRequest.setModelId(Long.valueOf(modelId));
         devChatRequest.setMessage(name.toString());
 
         BaseResponse<DevChatResponse> response = client.doChat(devChatRequest);
