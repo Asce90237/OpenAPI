@@ -27,11 +27,13 @@ import common.BaseResponse;
 import common.ErrorCode;
 import common.Utils.ResultUtils;
 import common.constant.LockConstant;
+import common.constant.RedisConstant;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,6 +68,9 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
 
     @Autowired
     private RedissonClient redissonClient;
+
+    @Autowired
+    private RedisTemplate redisTemplate;
 
     /**
      * 校验接口是否可用
@@ -187,6 +192,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         }
         long newInterfaceInfoId = interfaceInfo.getId();
         redisTemplateUtils.delAllOnlinePage();
+        redisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
         return ResultUtils.success(newInterfaceInfoId);
     }
 
@@ -219,6 +225,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
         }
         redisTemplateUtils.delAllOnlinePage();
+        redisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
         return ResultUtils.success(b);
     }
 
@@ -287,20 +294,14 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         if (oldInterfaceInfo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
-
         // 判断接口是否可以调用
-//        Object userObj = request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
-//        User currentUser = (User) userObj;
-//        String res = apiClient.getResult(currentUser.getId(), currentUser.getUserAccount(), "woshinidie", Method.GET);
-//        if (res == null) {
-//            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"接口调用失败");
-//        }
         //更新数据库
         InterfaceInfo interfaceInfo = new InterfaceInfo();
         interfaceInfo.setId(id);
         interfaceInfo.setStatus(InterFaceInfoEnum.ONLINE.getValue());
         boolean result = this.updateById(interfaceInfo);
         redisTemplateUtils.delAllOnlinePage();
+        redisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
         return ResultUtils.success(result);
     }
 
@@ -327,6 +328,7 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         interfaceInfo.setStatus(InterFaceInfoEnum.OFFLINE.getValue());
         boolean result = this.updateById(interfaceInfo);
         redisTemplateUtils.delAllOnlinePage();
+        redisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
         return ResultUtils.success(result);
     }
 
@@ -403,6 +405,21 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         interfaceInfoVo.setFlag(one.getStatus());
         interfaceInfoVo.setLeftNum(one.getLeftNum());
         return ResultUtils.error(interfaceInfoVo,"今日已领取");
+    }
+
+    /**
+     *
+     * 获取全站可调用接口数
+     * @return
+     */
+    @Override
+    public BaseResponse<String> onlineInterfaceCnt() {
+        String cnt = (String) redisTemplate.opsForValue().get(RedisConstant.API_INDEX_INTERFACE_CNT);
+        if (cnt == null) {
+            cnt = String.valueOf(this.count(new QueryWrapper<InterfaceInfo>().eq("isDelete",0).eq("status",1)));
+            redisTemplate.opsForValue().set(RedisConstant.API_INDEX_INTERFACE_CNT, cnt, 1, TimeUnit.DAYS);
+        }
+        return ResultUtils.success(cnt);
     }
 }
 

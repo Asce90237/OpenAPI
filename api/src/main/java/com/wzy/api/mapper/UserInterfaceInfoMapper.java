@@ -17,6 +17,8 @@ import java.util.List;
 public interface UserInterfaceInfoMapper extends BaseMapper<UserInterfaceInfo> {
 
     List<UserInterfaceLeftNumVo> getUserInterfaceLeftNum(@Param("id") Long id);
+
+    String getTotalInvokeCount();
 }
 
 

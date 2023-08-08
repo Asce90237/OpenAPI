@@ -122,7 +122,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .logoutUrl("/user/logout") //指定用户注销登录时请求访问的地址
                 .deleteCookies(CookieConstant.headAuthorization)//指定用户注销登录后删除的 Cookie。
                 .deleteCookies(CookieConstant.autoLoginAuthCheck)
-                .logoutSuccessUrl("http://localhost:88/api/user/logoutSuccess");//指定退出登录后跳转的地址
+                .logoutSuccessUrl("https://openapi.love/api/user/logoutSuccess");//指定退出登录后跳转的地址
         // todo 线上需修改该地址
         //每个浏览器最多同时只能登录1个用户
         http.sessionManagement()

@@ -20,8 +20,6 @@ public interface UserMapper extends BaseMapper<User> {
     String selectPhone(@Param("mobile") String mobile);
 
     List<EchartsVo> getUserList(@Param("dateList") List<String> dateList);
-
-    String getTotalInvokeCount();
 }
 
 

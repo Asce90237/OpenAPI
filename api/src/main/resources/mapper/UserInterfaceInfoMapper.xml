@@ -27,4 +27,7 @@
         LEFT JOIN interface_charging c ON i.id = c.interfaceid
         WHERE i.isDelete=0 AND i.status = 1 AND u.userId =#{id}
     </select>
+    <select id="getTotalInvokeCount" resultType="java.lang.String">
+        select sum(totalNum) from `user_interface_info`
+    </select>
 </mapper>

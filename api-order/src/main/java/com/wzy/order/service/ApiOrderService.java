@@ -69,4 +69,10 @@ public interface ApiOrderService extends IService<ApiOrder> {
      * @return
      */
     BaseResponse getOrderEchartsData(List<String> dateList);
+
+    /**
+     * 成功交易订单数量
+     * @return
+     */
+    BaseResponse<String> getSuccessOrderCnt();
 }

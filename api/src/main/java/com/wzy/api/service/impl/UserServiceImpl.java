@@ -21,6 +21,8 @@ import com.wzy.api.common.*;
 import com.wzy.api.constant.UserConstant;
 import com.wzy.api.feign.ApiOrderFeignClient;
 import com.wzy.api.mapper.InterfaceInfoMapper;
+import com.wzy.api.mapper.UserInterfaceInfoMapper;
+import com.wzy.api.service.UserInterfaceInfoService;
 import common.Exception.BusinessException;
 import com.wzy.api.mapper.AuthMapper;
 import com.wzy.api.mapper.UserMapper;
@@ -38,6 +40,7 @@ import common.ErrorCode;
 import common.Utils.CookieUtils;
 import common.Utils.ResultUtils;
 import common.constant.CookieConstant;
+import common.constant.RedisConstant;
 import common.to.Oauth2ResTo;
 import common.to.SmsTo;
 import common.vo.EchartsVo;
@@ -92,6 +95,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private InterfaceInfoMapper interfaceInfoMapper;
+
+    @Resource
+    private UserInterfaceInfoMapper userInterfaceInfoMapper;
 
     @Autowired
     private GenerateAuthUtils generateAuthUtils;
@@ -755,7 +761,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public BaseResponse getTotalCnt() {
-        String total = userMapper.getTotalInvokeCount();
+        String total = (String) redisTemplate.opsForValue().get(RedisConstant.API_INDEX_INVOKE_CNT);
+        if (total == null) {
+            total = userInterfaceInfoMapper.getTotalInvokeCount();
+            redisTemplate.opsForValue().set(RedisConstant.API_INDEX_INVOKE_CNT, total, 1, TimeUnit.DAYS);
+        }
         return ResultUtils.success(total);
     }
 

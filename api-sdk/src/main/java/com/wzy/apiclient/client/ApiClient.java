@@ -14,7 +14,7 @@ public class ApiClient {
     private Integer appId;
     private String accessKey;
     private String secretKey;
-    private String url = "http://localhost:88/api/main";
+    private String url = "http://localhost:8719/api/main";
 
     public ApiClient() {
     }

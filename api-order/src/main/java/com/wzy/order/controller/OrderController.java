@@ -48,7 +48,7 @@ public class OrderController {
      */
     @GetMapping("/getSuccessOrder")
     public BaseResponse getSuccessOrder(){
-        return ResultUtils.success(apiOrderService.count(new QueryWrapper<ApiOrder>().eq("status",1)));
+        return apiOrderService.getSuccessOrderCnt();
     }
 
     /**

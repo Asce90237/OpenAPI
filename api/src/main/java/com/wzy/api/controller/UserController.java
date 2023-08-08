@@ -182,6 +182,7 @@ public class UserController {
         }
         User user = new User();
         BeanUtils.copyProperties(userUpdateRequest, user);
+        // todo 用户名和手机号不能重复
         boolean result = userService.updateById(user);
         return ResultUtils.success(result);
     }

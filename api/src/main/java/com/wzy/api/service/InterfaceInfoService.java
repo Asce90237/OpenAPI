@@ -90,4 +90,10 @@ public interface InterfaceInfoService extends IService<InterfaceInfo> {
      * @return
      */
     BaseResponse<InterfaceInfoVo> flushCnt(long id, HttpServletRequest request);
+
+    /**
+     * 获取全站可调用接口数
+     * @return
+     */
+    BaseResponse<String> onlineInterfaceCnt();
 }

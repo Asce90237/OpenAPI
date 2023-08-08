@@ -49,8 +49,5 @@
         ORDER BY
         DATE_FORMAT(createTime, '%Y-%m-%d') DESC;
     </select>
-    <select id="getTotalInvokeCount" resultType="java.lang.String">
-        select sum(totalNum) from `user_interface_info`
-    </select>
 
 </mapper>

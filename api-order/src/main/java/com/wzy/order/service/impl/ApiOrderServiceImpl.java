@@ -30,6 +30,7 @@ import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
 import common.constant.CookieConstant;
 import common.constant.OrderConstant;
+import common.constant.RedisConstant;
 import common.model.entity.InterfaceInfo;
 import common.to.GetAvailablePiecesTo;
 import common.vo.*;
@@ -313,6 +314,20 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     public BaseResponse getOrderEchartsData(List<String> dateList) {
         List<EchartsVo> list = apiOrderMapper.getOrderEchartsData(dateList);
         return ResultUtils.success(list);
+    }
+
+    /**
+     * 成功交易订单数量
+     * @return
+     */
+    @Override
+    public BaseResponse<String> getSuccessOrderCnt() {
+        String cnt = (String) redisTemplate.opsForValue().get(RedisConstant.API_INDEX_ORDER_CNT);
+        if (cnt == null) {
+            cnt = String.valueOf(this.count(new QueryWrapper<ApiOrder>().eq("status",1)));
+            redisTemplate.opsForValue().set(RedisConstant.API_INDEX_ORDER_CNT, cnt, 1, TimeUnit.DAYS);
+        }
+        return ResultUtils.success(cnt);
     }
 
 

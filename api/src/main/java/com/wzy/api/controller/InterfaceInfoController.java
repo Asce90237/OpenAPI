@@ -41,7 +41,7 @@ public class InterfaceInfoController {
      */
     @GetMapping("/getInterfaceCount")
     public BaseResponse getInterfaceCount(){
-        return ResultUtils.success(interfaceInfoService.count(new QueryWrapper<InterfaceInfo>().eq("isDelete",0).eq("status",1)));
+        return interfaceInfoService.onlineInterfaceCnt();
     }
 
     /**
