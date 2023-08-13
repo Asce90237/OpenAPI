@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -52,10 +53,8 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
     @DubboReference
     private InnerService innerService;
 
-    private static final List<String>  PATH_WHITE_LIST = Arrays.asList("/api/apiclient","/api/user/**");
-
-    //需要登录才能进行访问
-    private static final List<String> PATH_LOGIN_LIST = Arrays.asList("/api/userInterfaceInfo/**" ,"/api/interfaceInfo/**","/api/auth/**","/api/oauth/**","/api/order/**","/api/alipay/**");
+    @Autowired
+    private PathListConfig pathListConfig;
 
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
@@ -65,7 +64,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         // 1. 打印请求日志
         logPrint(request);
         //查询用户是否登录时、用户登录等请求，直接放行
-        List<Boolean> collect = PATH_WHITE_LIST.stream().map(item -> {
+        List<Boolean> collect = pathListConfig.getWhite().stream().map(item -> {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
             return antPathMatcher.match(item, path);
         }).collect(Collectors.toList());
@@ -73,12 +72,12 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             return chain.filter(exchange);
         }
         // 2、网关统一鉴权：其他接口需要判断用户是否登录
-        List<Boolean> collectLogin = PATH_LOGIN_LIST.stream().map(item -> {
+        List<Boolean> collectLogin = pathListConfig.getLogin().stream().map(item -> {
             AntPathMatcher antPathMatcher = new AntPathMatcher();
             return antPathMatcher.match(item, path);
         }).collect(Collectors.toList());
         HttpHeaders headers = request.getHeaders();
-        String cookie = headers.getFirst("Cookie"); //getFirst 取出第一个匹配的
+        String cookie = headers.getFirst("Cookie"); //getFirst 特定的写法
         // todo 访问控制 如果访问ip不在白名单中，则直接设置状态码，然后拦截掉
         if(collectLogin.contains(true)) {
             String loginUserVo = HttpRequest.post("http://localhost:7529/api/user/checkUserLogin")

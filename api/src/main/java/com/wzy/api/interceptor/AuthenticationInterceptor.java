@@ -69,12 +69,6 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         if (!verifyTime){
             //过期了需要重新登录
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR,"登录状态过期，请重新登录");
-//            String refreshToken = tokenUtils.refreshToken(authorization);
-//            Cookie authorization1 = new Cookie("authorization", refreshToken);
-//            authorization1.setPath("/");
-//            authorization1.setMaxAge(cookieExpireConstant.expireTime);
-//            response.addCookie(authorization1);
-//            SecurityContextHolder.getContext().setAuthentication(authentication);
         }
         return true;
     }
