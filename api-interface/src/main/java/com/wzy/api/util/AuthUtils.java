@@ -51,7 +51,7 @@ public class AuthUtils {
         }
         String timestamp = headers.get("timestamp");
         String now = String.valueOf(DateUtil.date(System.currentTimeMillis()));
-        // 防止重放攻击
+        // 添加timestamp来防止重放攻击
         // DateUtil.between(date1,date2,DateUnit.HOUR) 判断date1与date2相差多少小时
         if (timestamp == null || timestamp.isEmpty() || DateUtil.between(DateUtil.parse(timestamp), DateUtil.parse(now), DateUnit.HOUR) > 1) {
             return false;
@@ -61,10 +61,7 @@ public class AuthUtils {
             return false;
         }
         boolean isToken = jwtUtils.isToken(appId, token, accessKey, secretKey);
-        if (!isToken) {
-            return false;
-        }
-        return true;
+        return isToken;
     }
 
     /**
@@ -75,15 +72,7 @@ public class AuthUtils {
      */
     public Map<String, String> getHeaders(HttpServletRequest request) {
         Map<String, String> map = new HashMap<>();
-        map.put("userId", request.getHeader("userId"));
-        map.put("userAccount", request.getHeader("userAccount"));
-        map.put("appId", request.getHeader("appId"));
-        map.put("accessKey", request.getHeader("accessKey"));
-        map.put("secretKey", request.getHeader("secretKey"));
         map.put("body", request.getHeader("body"));
-        map.put("timestamp", request.getHeader("timestamp"));
-        map.put("interfaceId", request.getHeader("interfaceId"));
-        map.put("url", request.getHeader("url"));
         return map;
     }
 }

@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wzy.api.annotation.AuthCheck;
 import com.wzy.api.common.DeleteRequest;
 import com.wzy.api.constant.UserConstant;
+import com.wzy.apiclient.client.ApiClient;
+import com.wzy.apiclient.model.Api;
 import common.Exception.BusinessException;
 import com.wzy.api.model.dto.user.*;
 import com.wzy.api.model.entity.User;
@@ -19,6 +21,7 @@ import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;

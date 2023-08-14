@@ -47,12 +47,10 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         if (!verifyToken){
             throw new BusinessException(ErrorCode.ILLEGAL_ERROR);
         }
-        Principal userPrincipal = request.getUserPrincipal();
-        String name = userPrincipal.getName();
         //从Security全局对象中获取当前登录用户
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
-        if (currentUser == null || null == name || !currentUser.getUserAccount().equals(name)){
+        if (currentUser == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
         JWT jwt = JWTUtil.parseToken(authorization);
@@ -61,6 +59,7 @@ public class AuthenticationInterceptor implements HandlerInterceptor {
         if (userAccount == null || id == null){
             throw new BusinessException(ErrorCode.ILLEGAL_ERROR);
         }
+        // 确保jwt没有被篡改
         if (!currentUser.getId().toString().equals(id) || !currentUser.getUserAccount().equals(userAccount)){
             throw new BusinessException(ErrorCode.ILLEGAL_ERROR);
         }

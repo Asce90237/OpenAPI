@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.io.UnsupportedEncodingException;
 
 @RestController
 public class InterfaceClientController {
@@ -42,56 +43,36 @@ public class InterfaceClientController {
      * @return
      */
     @PostMapping("/apiclient")
-    public BaseResponse<Object> apiClient(@RequestBody InterfaceInfoInvokRequest userRequestParams, HttpServletRequest request) {
+    public BaseResponse<Object> apiClient(@RequestBody InterfaceInfoInvokRequest userRequestParams, HttpServletRequest request) throws UnsupportedEncodingException {
         if (userRequestParams == null || userRequestParams.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         // 接口id
         long id = userRequestParams.getId();
-        // 判断是否存在
+        // todo 优化为只查询一个字段判断是否存在
         InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
-        if (oldInterfaceInfo == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-        }
-        // 判断接口状态是否正常
-        if(oldInterfaceInfo.getStatus() != InterFaceInfoEnum.ONLINE.getValue()){
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"接口关闭");
-        }
         Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         User currentUser = (User) principal;
         if(currentUser == null){
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
         String params = userRequestParams.getUserRequestParams();
-        String method = userRequestParams.getMethod();
-        String url = userRequestParams.getUrl();
-        if(method == null || url == null || (params == null && !oldInterfaceInfo.getRequestParams().equals(CommonConstant.INTERFACE_PARAM_STATUS))){
+        if(params == null && !oldInterfaceInfo.getRequestParams().equals(CommonConstant.INTERFACE_PARAM_STATUS)){
             throw new BusinessException(ErrorCode.SYSTEM_ERROR,"请求参数错误");
         }
         Api api = new Api();
-        api.setInterfaceId(String.valueOf(id));
-        api.setId(currentUser.getId());
-        api.setUserAccount(currentUser.getUserAccount());
-        api.setBody(params);
-        api.setUrl(url);
-        api.setMethod(method);
+        api.setInterfaceId(id);
+        api.setParameter(params);
         Auth auth = authService.getOne(new QueryWrapper<Auth>()
                 .eq("userid", currentUser.getId())
                 .ne("status", 1));
-        // 0-启用，1-未启用 ne 不等于
         if (auth == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"API密钥不存在 或 API密钥已经被关闭");
+            throw new BusinessException(ErrorCode.SK_ERROR, "ak被禁用");
         }
-        ApiClient apiClient = new ApiClient(auth.getAppid(),auth.getAccesskey(),auth.getSecretkey());
+        ApiClient apiClient = new ApiClient(auth.getAccesskey(),auth.getSecretkey());
         String result = apiClient.getResult(api);
-        if (result.equals(AuthConstant.HAS_NO_COUNT)) {
-            return ResultUtils.error(ErrorCode.API_INVOKE_ERROR, "接口调用次数不足");
-        }
         Gson gson = new Gson();
         BaseResponse res = gson.fromJson(result, BaseResponse.class);
-        if (res.getCode() != ErrorCode.SUCCESS.getCode()) {
-            return ResultUtils.error(ErrorCode.API_INVOKE_ERROR,res.getMessage());
-        }
-        return ResultUtils.success(res.getData().toString());
+        return res;
     }
 }

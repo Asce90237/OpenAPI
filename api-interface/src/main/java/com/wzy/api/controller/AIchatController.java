@@ -1,20 +1,15 @@
 package com.wzy.api.controller;
 
-import com.google.gson.Gson;
 import com.yupi.yucongming.dev.client.YuCongMingClient;
 import com.yupi.yucongming.dev.common.BaseResponse;
 import com.yupi.yucongming.dev.model.DevChatRequest;
 import com.yupi.yucongming.dev.model.DevChatResponse;
-import common.ErrorCode;
-import common.Utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
-import java.util.Random;
 
 /**
  * AI chat API
@@ -39,6 +34,9 @@ public class AIchatController {
         devChatRequest.setMessage(name.toString());
 
         BaseResponse<DevChatResponse> response = client.doChat(devChatRequest);
+        if (response == null || response.getCode() != 0 || response.getData() == null) {
+            throw new RuntimeException();
+        }
         return response.getData().getContent();
     }
 

@@ -43,10 +43,7 @@ public class JwtUtils {
             if (!appId.equals(payloadId) || !accessKey.equals(payloadAccessKey) || !secretKey.equals(payloadSecretKey)) {
                 return false;
             }
-            if(!isSecretKey(appId,userAccount,secretKey)){
-                return false;
-            }
-            return true;
+            return isSecretKey(appId, userAccount, secretKey);
         }
         return false;
     }

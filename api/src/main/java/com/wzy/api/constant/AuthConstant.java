@@ -11,7 +11,4 @@ public interface AuthConstant {
 
     DigestAlgorithm algorithm = DigestAlgorithm.SHA512;
 
-    String HAS_NO_COUNT = "{\"code\":403,\"message\":\"接口调用次数不足\",\"data\":null}";
-
-
 }

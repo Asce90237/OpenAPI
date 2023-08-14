@@ -10,27 +10,11 @@ import java.io.Serializable;
 @Data
 public class Api implements Serializable {
     /**
-     * 用户id
-     */
-    Long id;
-    /**
-     * 用户账号
-     */
-    String userAccount;
-    /**
      * 接口id
      */
-    String interfaceId;
+    Long interfaceId;
     /**
-     * 请求地址
+     * 请求参数
      */
-    String url;
-    /**
-     * 请求体
-     */
-    Object body;
-    /**
-     * 请求方法
-     */
-    String method;
+    String parameter;
 }

@@ -16,7 +16,6 @@ import java.lang.reflect.Constructor;
 @ConfigurationProperties("api.client")  //加上前缀 api.client
 public class ApiClientConfig {
 
-    private Integer appId;
     private String accessKey;
     private String secretKey;
 
@@ -25,9 +24,9 @@ public class ApiClientConfig {
         ApiClient client = null;
         try {
             Class<?> forName = Class.forName("com.wzy.apiclient.client.ApiClient");
-            Constructor<?> declaredConstructor = forName.getDeclaredConstructor(Integer.class, String.class, String.class);
+            Constructor<?> declaredConstructor = forName.getDeclaredConstructor(String.class, String.class);
             declaredConstructor.setAccessible(true);
-            client = (ApiClient) declaredConstructor.newInstance(appId, accessKey, secretKey);
+            client = (ApiClient) declaredConstructor.newInstance(accessKey, secretKey);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

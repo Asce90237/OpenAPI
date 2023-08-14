@@ -17,8 +17,13 @@
 package com.wzy.api.provider;
 
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.wzy.api.model.entity.Auth;
+import com.wzy.api.model.entity.InterfaceInfo;
+import com.wzy.api.service.AuthService;
+import com.wzy.api.service.InterfaceInfoService;
 import common.Exception.BusinessException;
 import com.wzy.api.model.entity.UserInterfaceInfo;
 import com.wzy.api.service.UserInterfaceInfoService;
@@ -39,9 +44,17 @@ public class InnerServiceImpl implements InnerService {
 
 
     @Resource
-    private UserService userService;
+    private InterfaceInfoService interfaceInfoService;
 
+    @Resource
+    private AuthService authService;
 
+    @Override
+    public Auth getAuthByAk(String accessKey) {
+        LambdaQueryWrapper<Auth> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(Auth::getAccesskey, accessKey);
+        return authService.getOne(lambdaQueryWrapper);
+    }
 
     /**
      * 接口调用次数更新
@@ -80,7 +93,15 @@ public class InnerServiceImpl implements InnerService {
                 .eq("interfaceInfoId", interfaceInfoId)
                 .eq("userId", userId)
                 .gt("leftNum", 0));
-        return one == null ? false :true;
+        return one != null;
     }
 
+    @Override
+    public boolean apiIdIsValid(long interfaceInfoId) {
+        LambdaQueryWrapper<com.wzy.api.model.entity.InterfaceInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getId, interfaceInfoId);
+        queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getStatus, 1);
+        InterfaceInfo one = interfaceInfoService.getOne(queryWrapper);
+        return one != null;
+    }
 }

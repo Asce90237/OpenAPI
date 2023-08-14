@@ -16,6 +16,8 @@
  */
 package com.wzy.api.provider;
 
+import com.wzy.api.model.entity.Auth;
+
 public interface InnerService {
 
     /**
@@ -33,4 +35,18 @@ public interface InnerService {
      * @return
      */
     boolean hasCount(long interfaceInfoId,long userId);
+
+    /**
+     * 根据ak查密钥信息
+     * @param accessKey
+     * @return
+     */
+    Auth getAuthByAk(String accessKey);
+
+    /**
+     * 判断接口是否有效
+     * @param interfaceInfoId
+     * @return
+     */
+    boolean apiIdIsValid(long interfaceInfoId);
 }

@@ -7,14 +7,19 @@ import cn.hutool.json.JSONUtil;
 import com.alibaba.nacos.common.model.RestResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
 import com.wzy.api.provider.InnerService;
+import com.wzy.apiclient.model.Api;
+import com.wzy.apiclient.utils.SignUtils;
 import common.BaseResponse;
-import common.constant.CommonConstant;
+import common.ErrorCode;
+import common.Utils.ResultUtils;
+import common.model.entity.Auth;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
@@ -27,14 +32,12 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.http.server.reactive.ServerHttpResponseDecorator;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -88,39 +91,56 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             BaseResponse baseResponse = JSONUtil.toBean(entries, BaseResponse.class);
             Object data = baseResponse.getData();
             if (null == data){
-                response.setStatusCode(HttpStatus.FORBIDDEN); //设置状态码
-                return response.setComplete(); //拦截(==exchange.getResponse.setComplete())
+                return handleNoAuth(response,ErrorCode.NOT_LOGIN_ERROR); //拦截
             }else {
                 return chain.filter(exchange); //放行
             }
         }
-        // 3. 用户鉴权在服务端鉴别，这里只做判空
+        // 3. 判空
         String accessKey = headers.getFirst("accessKey");
-        String appId = headers.getFirst("appId");
-        String secretKey = headers.getFirst("secretKey");
-        String userId = headers.getFirst("userId");
-        String interfaceId = headers.getFirst("interfaceId");
-        if(appId.isEmpty() || secretKey.isEmpty() || accessKey.isEmpty() || userId.isEmpty()){
-            response.setStatusCode(HttpStatus.FORBIDDEN);
-            return response.setComplete();
+        String sign = headers.getFirst("sign");
+        String body = headers.getFirst("body");
+        // 判空
+        if(sign == null || accessKey == null || body == null) {
+            return handleNoAuth(response, ErrorCode.ILLEGAL_ERROR);
+        }
+        Api api = JSONUtil.toBean(body, Api.class);
+        // 判断接口是否存在 todo 走缓存
+        boolean apiIdIsValid = innerService.apiIdIsValid(api.getInterfaceId());
+        if (!apiIdIsValid) {
+            return handleNoAuth(response, ErrorCode.API_NOT_FOUND);
+        }
+        // 判断ak是否合法
+        Auth auth = innerService.getAuthByAk(accessKey);
+        if (auth == null) {
+            return handleNoAuth(response,ErrorCode.AK_NOT_FOUND);
+        }
+        String checkSign = SignUtils.genSign(body, auth.getSecretkey());
+        if (checkSign == null || !checkSign.equals(sign)) {
+            return handleNoAuth(response,ErrorCode.SK_ERROR);
         }
         // 4。判断用户剩余调用次数是否足够
-        boolean hasCount = innerService.hasCount(Long.parseLong(interfaceId), Long.parseLong(userId));
+        boolean hasCount = innerService.hasCount(api.getInterfaceId(), auth.getUserid());
         if(!hasCount){
-            //调用次数不足，自定义返回结果
-            response.setStatusCode(HttpStatus.FORBIDDEN);
-            DataBufferFactory bufferFactory = response.bufferFactory();
-            ObjectMapper objectMapper = new ObjectMapper();
-            DataBuffer wrap = null;
-            try {
-                wrap = bufferFactory.wrap(objectMapper.writeValueAsBytes(new RestResult<>(403, "接口调用次数不足")));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-            DataBuffer finalWrap = wrap;
-            return response.writeWith(Mono.fromSupplier(() -> finalWrap));
+            return handleNoAuth(response,ErrorCode.API_UNDER_CNT);
         }
-        return handleResponse(exchange, chain, Long.parseLong(interfaceId), Long.parseLong(userId));
+        return handleResponse(exchange, chain, api.getInterfaceId(), auth.getUserid());
+    }
+
+    @NotNull
+    private Mono<Void> handleNoAuth(ServerHttpResponse response, ErrorCode errorCode) {
+        //自定义返回结果
+        response.setStatusCode(HttpStatus.FORBIDDEN);
+        DataBufferFactory bufferFactory = response.bufferFactory();
+        ObjectMapper objectMapper = new ObjectMapper();
+        DataBuffer wrap = null;
+        try {
+            wrap = bufferFactory.wrap(objectMapper.writeValueAsBytes(ResultUtils.error(errorCode)));
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+        DataBuffer finalWrap = wrap;
+        return response.writeWith(Mono.fromSupplier(() -> finalWrap));
     }
 
     //实现Ordered接口，设置过滤器优先级，也可以直接通过@Order(-1)注解生效
@@ -186,12 +206,17 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                                         sb2.append(data);
                                         // 打印日志
                                         log.info("响应结果：" + data);
+                                        Gson gson = new Gson();
+                                        BaseResponse res = gson.fromJson(data, BaseResponse.class);
+                                        // 接口异常不扣减次数
+                                        if (res.getCode() != 0) {
+                                            return bufferFactory.wrap(content);
+                                        }
                                         log.info("=====  {} 结束 =====", request.getId());
-                                        if (data.equals(CommonConstant.INVOKE_ERROR)) return bufferFactory.wrap(content);
                                         // 7. 调用成功，接口调用次数 + 1 剩余次数 - 1 invokeCount
                                         try {
                                             boolean b = innerService.invokeCount(interfaceInfoId, userId);
-                                            log.info("<-------修改接口调用次数：{}", b == true ? "成功" : "失败");
+                                            log.info("<-------修改接口调用次数：{}", b ? "成功" : "失败");
                                         } catch (Exception e) {
                                             log.error("invokeCount error", e);
                                         }

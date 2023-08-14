@@ -1,7 +1,7 @@
 package com.wzy.api.controller;
 
 import com.google.gson.Gson;
-import com.wzy.api.service.AuthService;
+import com.wzy.api.service.MainService;
 import common.ErrorCode;
 import common.Utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletRequest;
 @RestController
 public class MainController {
     @Autowired
-    private AuthService authService;
+    private MainService mainService;
 
     /**
      * 请求转发
@@ -25,7 +25,7 @@ public class MainController {
         String res = null;
         Gson gson = new Gson();
         try {
-            res = gson.toJson(ResultUtils.success(authService.mainRedirect(request)));
+            res = gson.toJson(ResultUtils.success(mainService.mainRedirect(request)));
         } catch (Exception e) {
             res = gson.toJson(ResultUtils.error(ErrorCode.API_INVOKE_ERROR));
         }

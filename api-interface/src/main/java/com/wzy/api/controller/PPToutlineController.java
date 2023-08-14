@@ -34,6 +34,9 @@ public class PPToutlineController {
         devChatRequest.setMessage(name.toString());
 
         BaseResponse<DevChatResponse> response = client.doChat(devChatRequest);
+        if (response == null || response.getCode() != 0 || response.getData() == null) {
+            throw new RuntimeException();
+        }
         return response.getData().getContent();
     }
 

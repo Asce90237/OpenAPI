@@ -4,6 +4,9 @@ import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradePagePayRequest;
+import com.google.gson.Gson;
+import com.wzy.apiclient.client.ApiClient;
+import com.wzy.apiclient.model.Api;
 import com.wzy.thirdParty.common.RabbitOrderPaySuccessUtils;
 import com.wzy.thirdParty.config.AliPayClientConfig;
 import com.wzy.thirdParty.model.dto.AliPayDto;
@@ -15,12 +18,16 @@ import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
 import common.constant.RedisConstant;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -40,6 +47,21 @@ public class AliPayController {
     @Autowired
     private RabbitOrderPaySuccessUtils rabbitOrderPaySuccessUtils;
 
+    @Value("${api.client.access-key}")
+    private String accessKey;
+
+    @Value("${api.client.secret-key}")
+    private String secretKey;
+
+    @PostMapping("/y")
+    @ResponseBody
+    public BaseResponse getY(@RequestBody Api api) throws UnsupportedEncodingException {
+        ApiClient apiClient = new ApiClient(accessKey,secretKey);
+        String result = apiClient.getResult(api);
+        Gson gson = new Gson();
+        BaseResponse res = gson.fromJson(result, BaseResponse.class);
+        return res;
+    }
 
     /**
      * 调用支付请求

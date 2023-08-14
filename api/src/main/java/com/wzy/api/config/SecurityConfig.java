@@ -24,7 +24,17 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
 @Configuration
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    private String[] pathPatterns = {"/user/oauth2/**", "/user/register","/user/login","/user/loginBySms","/v3/api-docs","/user/logoutSuccess","/user/getpassusertype","/user/sendPassUserCode","/user/authPassUserCode","/user/updateUserPass"};
+    private String[] pathPatterns = {"/user/oauth2/**",
+            "/user/register",
+            "/user/login",
+            "/user/loginBySms",
+            "/v3/api-docs",
+            "/user/logoutSuccess",
+            "/user/getpassusertype",
+            "/user/sendPassUserCode",
+            "/user/authPassUserCode",
+            "/user/updateUserPass"
+    };
 
     private String[] adminPath = {"/user/list/page",
             "/user/list",
