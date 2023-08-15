@@ -55,12 +55,10 @@ public class AliPayController {
 
     @PostMapping("/y")
     @ResponseBody
-    public BaseResponse getY(@RequestBody Api api) throws UnsupportedEncodingException {
+    public com.wzy.apiclient.common.BaseResponse getY(@RequestBody Api api) throws UnsupportedEncodingException {
         ApiClient apiClient = new ApiClient(accessKey,secretKey);
-        String result = apiClient.getResult(api);
-        Gson gson = new Gson();
-        BaseResponse res = gson.fromJson(result, BaseResponse.class);
-        return res;
+        com.wzy.apiclient.common.BaseResponse result = apiClient.getResult(api);
+        return result;
     }
 
     /**

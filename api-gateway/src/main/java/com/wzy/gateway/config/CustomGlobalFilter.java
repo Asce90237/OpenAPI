@@ -4,7 +4,6 @@ import cn.hutool.core.text.AntPathMatcher;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
-import com.alibaba.nacos.common.model.RestResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
@@ -96,7 +95,6 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                 return chain.filter(exchange); //放行
             }
         }
-        // 3. 判空
         String accessKey = headers.getFirst("accessKey");
         String sign = headers.getFirst("sign");
         String body = headers.getFirst("body");
@@ -109,6 +107,13 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         boolean apiIdIsValid = innerService.apiIdIsValid(api.getInterfaceId());
         if (!apiIdIsValid) {
             return handleNoAuth(response, ErrorCode.API_NOT_FOUND);
+        }
+        // 判断接口参数是否允许为空
+        if (api.getParameter() == null || api.getParameter().length() == 0) {
+            boolean paramsIsValid = innerService.paramsIsValid(api.getInterfaceId());
+            if (!paramsIsValid) {
+                return handleNoAuth(response, ErrorCode.PARAMS_ERROR);
+            }
         }
         // 判断ak是否合法
         Auth auth = innerService.getAuthByAk(accessKey);

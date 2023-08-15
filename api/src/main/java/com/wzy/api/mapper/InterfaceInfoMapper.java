@@ -21,7 +21,7 @@ public interface InterfaceInfoMapper extends BaseMapper<InterfaceInfo> {
 
     Page<AllInterfaceInfoVo> selectAllPage(Page<AllInterfaceInfoVo> objectPage, @Param("dto") InterfaceInfoQueryRequest interfaceInfoQueryRequest);
 
-    Page<AllInterfaceInfoVo> selectOnlinePage(Page<Object> objectPage, @Param("dto") InterfaceInfoQueryRequest interfaceInfoQueryRequest);
+    Page<AllInterfaceInfoVo> selectOnlinePage(Page<Object> page);
 
     List<EchartsVo> getInterfaceList(@Param("dateList") List<String> dateList);
 }

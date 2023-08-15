@@ -2,12 +2,20 @@ package com.wzy.api.common;
 
 import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.wzy.api.mapper.InterfaceInfoMapper;
 import com.wzy.api.model.vo.AllInterfaceInfoVo;
+import common.ErrorCode;
+import common.Exception.BusinessException;
+import common.Utils.ResultUtils;
+import common.constant.LockConstant;
 import common.constant.RedisConstant;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -19,6 +27,12 @@ public class RedisTemplateUtils {
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Autowired
+    private RedissonClient redissonClient;
+
+    @Resource
+    private InterfaceInfoMapper interfaceInfoMapper;
 
     /**
      * 缓存首页和请求次数中所有接口
@@ -37,9 +51,37 @@ public class RedisTemplateUtils {
      * @param current
      * @return
      */
-    public Page<AllInterfaceInfoVo> getOnlinePage(long current){
+    public Page<AllInterfaceInfoVo> getOnlinePage(long current, long size){
         Page<AllInterfaceInfoVo> onlinePage = (Page<AllInterfaceInfoVo>) redisTemplate.opsForValue().get(RedisConstant.onlinePageCacheKey + current);
-        return onlinePage;
+        if (onlinePage != null){
+            //加入缓存后，请求时间由原来的平均68ms ，降低到平均36ms
+            return onlinePage;
+        }
+        // 加分布式锁，同一时刻只能有一个请求数据库，其他的请求循环等待，解决缓存击穿问题.
+        for (;;){
+            try {
+                RLock lock = redissonClient.getLock(LockConstant.interface_onlinePage_lock);
+                //尝试加锁，最多等待20秒，上锁以后10秒自动解锁
+                boolean b = lock.tryLock(20, 10, TimeUnit.SECONDS);
+                if (b){
+//                    //加锁成功,再次检查
+//                    Page<AllInterfaceInfoVo> onlinePageLock = this.getOnlinePage(current);
+//                    if (onlinePageLock != null){
+//                        lock.unlock();
+//                        return onlinePageLock;
+//                    }
+                    //仍未命中,查询数据库
+                    Page<AllInterfaceInfoVo> allInterfaceInfoVoPage = interfaceInfoMapper.selectOnlinePage(new Page<>(current, size));
+                    this.onlinePageCache(allInterfaceInfoVoPage);
+                    lock.unlock();
+                    return allInterfaceInfoVoPage;
+                }
+                //竞争不到锁，暂时让出CPU资源
+                Thread.yield();
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
     }
 
     /**

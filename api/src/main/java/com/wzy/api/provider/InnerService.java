@@ -49,4 +49,9 @@ public interface InnerService {
      * @return
      */
     boolean apiIdIsValid(long interfaceInfoId);
+
+    /**
+     * 判断参数是否可以为空
+     */
+    boolean paramsIsValid(long interfaceInfoId);
 }

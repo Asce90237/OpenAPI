@@ -20,6 +20,7 @@ package com.wzy.api.provider;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.wzy.api.constant.CommonConstant;
 import com.wzy.api.model.entity.Auth;
 import com.wzy.api.model.entity.InterfaceInfo;
 import com.wzy.api.service.AuthService;
@@ -103,5 +104,14 @@ public class InnerServiceImpl implements InnerService {
         queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getStatus, 1);
         InterfaceInfo one = interfaceInfoService.getOne(queryWrapper);
         return one != null;
+    }
+
+    @Override
+    public boolean paramsIsValid(long interfaceInfoId) {
+        LambdaQueryWrapper<com.wzy.api.model.entity.InterfaceInfo> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getId, interfaceInfoId);
+        queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getStatus, 1);
+        InterfaceInfo one = interfaceInfoService.getOne(queryWrapper);
+        return one.getRequestParams().equals(CommonConstant.INTERFACE_PARAM_STATUS);
     }
 }

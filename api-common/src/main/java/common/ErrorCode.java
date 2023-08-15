@@ -15,7 +15,7 @@ public enum ErrorCode {
     NOT_FOUND_ERROR(40400, "请求数据不存在"),
     AK_NOT_FOUND(40401, "ak不存在"),
     SK_ERROR(40402, "sk错误"),
-    API_NOT_FOUND(40403, "接口不存在"),
+    API_NOT_FOUND(40403, "接口不存在或已下线"),
     API_UNDER_CNT(40404, "接口调用次数不足"),
     FORBIDDEN_ERROR(40300, "禁止访问"),
     SYSTEM_ERROR(50000, "系统内部异常"),
