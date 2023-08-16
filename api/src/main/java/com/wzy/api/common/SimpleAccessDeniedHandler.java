@@ -21,7 +21,7 @@ import java.io.IOException;
 public class SimpleAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response, AccessDeniedException accessDeniedException) throws IOException, ServletException {
-        BaseResponse error = ResultUtils.error(ErrorCode.ILLEGAL_ERROR, "请求被拒绝，请重试!");
+        BaseResponse error = ResultUtils.error(ErrorCode.ILLEGAL_ERROR, "请求被拒绝，没有权限!");
         String json = JSON.toJSONString(error);
         response.setContentType("application/json");
         response.setCharacterEncoding("utf-8");

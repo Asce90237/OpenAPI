@@ -5,23 +5,20 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wzy.api.annotation.AuthCheck;
 import com.wzy.api.common.DeleteRequest;
 import com.wzy.api.constant.UserConstant;
-import com.wzy.apiclient.client.ApiClient;
-import com.wzy.apiclient.model.Api;
-import common.Exception.BusinessException;
 import com.wzy.api.model.dto.user.*;
 import com.wzy.api.model.entity.User;
-import common.vo.LoginUserVo;
 import com.wzy.api.model.vo.UserVO;
 import com.wzy.api.service.UserService;
 import common.BaseResponse;
 import common.ErrorCode;
+import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
 import common.to.Oauth2ResTo;
+import common.vo.LoginUserVo;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -42,6 +39,11 @@ public class UserController {
 
     @Resource
     private UserService userService;
+
+    @PostMapping("/hello")
+    public String hello(){
+        return "hello";
+    }
 
     // region 登录相关
 
@@ -135,7 +137,7 @@ public class UserController {
 
     @ApiOperation("用户通过 用户名和密码 登录")
     @PostMapping("/login")
-    public BaseResponse<LoginUserVo> userLoginByPwd(UserLoginRequest userLoginRequest, HttpServletResponse response) {
+    public BaseResponse<LoginUserVo> userLoginByPwd(@RequestBody UserLoginRequest userLoginRequest, HttpServletResponse response) {
         if (userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -205,7 +207,6 @@ public class UserController {
 
     @ApiOperation("获取用户列表")
     @GetMapping("/list")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<List<UserVO>> listUser(UserQueryRequest userQueryRequest, HttpServletRequest request) {
         return userService.lisUser(userQueryRequest);
     }

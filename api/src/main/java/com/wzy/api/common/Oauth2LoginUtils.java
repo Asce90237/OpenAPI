@@ -34,7 +34,7 @@ public class Oauth2LoginUtils {
     private AuthMapper authMapper;
 
     /**
-     * 通过gitee 或者 github 进行登录
+     * 通过gitee 或者 github 进行登录 todo 有问题？若是账号相同会出大问题
      * @param response
      * @return
      */
@@ -47,12 +47,7 @@ public class Oauth2LoginUtils {
         LoginUserVo loginUserVo = new LoginUserVo();
         if (null != user){
             user.setUserPassword(null);
-//            String mobile = user.getMobile();
-//            String newMobile = mobile.substring(0, 3) + "****" + mobile.substring(7);
-//            user.setMobile(newMobile);
             BeanUtils.copyProperties(user,loginUserVo);
-            String token = tokenUtils.generateToken(String.valueOf(loginUserVo.getId()),loginUserVo.getUserAccount());
-            loginUserVo.setToken(token);
         }else {
             String appId = String.valueOf((int) ((Math.random() * 9 + 1) * Math.pow(10, 9 - 1)));
             String accessKey = generateAuthUtils.accessKey(appId);
@@ -74,8 +69,6 @@ public class Oauth2LoginUtils {
             // 进行登录操作
             User user2 = userMapper.selectById(user1.getId());
             BeanUtils.copyProperties(user2,loginUserVo);
-            String token1 = tokenUtils.generateToken(String.valueOf(loginUserVo.getId()),loginUserVo.getUserAccount());
-            loginUserVo.setToken(token1);
         }
         return loginUserVo;
     }

@@ -22,30 +22,25 @@ import java.util.Map;
 @Slf4j
 public class TokenUtils {
 
-    @Autowired
-    private RedisTemplate<String,String> redisTemplate;
     //密钥
-    private final byte[] data = "API.YukeSeko.WZY".getBytes();
+    private final byte[] data = "Asce.OpenApi".getBytes();
     //签名器
     private final JWTSigner signer = JWTSignerUtil.hs512(data);
-    private final String TOKEN_PREFIX = "api:token:string:";
 
     /**
      * 生成token
      * @param id
-     * @param userAccount
      * @return
      */
-    public String generateToken(String id,String userAccount){
+    public String generateToken(String id){
         DateTime now = DateTime.now();
-        DateTime newTime = now.offsetNew(DateField.HOUR, 720); //过期时间720小时
+        DateTime newTime = now.offsetNew(DateField.HOUR, 168); //过期时间7天
         // payload荷载信息
         Map<String, Object> payload  = new HashMap<String, Object>() {
             private static final long serialVersionUID = 1L;
 
             {
                 put("id", id);
-                put("userAccount",userAccount);
                 //签发时间
                 put(RegisteredPayload.ISSUED_AT, now);
                 //过期时间
@@ -96,10 +91,7 @@ public class TokenUtils {
     public  boolean verifyTime(String token){
         JWT jwt = JWTUtil.parseToken(token);
         boolean verifyTime = jwt.validate(0);
-        if (verifyTime){
-            return false;
-        }
-        return true;
+        return !verifyTime;
     }
 
     /**
@@ -109,9 +101,8 @@ public class TokenUtils {
      */
     public String refreshToken(String token){
         JWT jwt = JWTUtil.parseToken(token);
-        String userAccount = (String) jwt.getPayload("userAccount");
         String id = (String) jwt.getPayload("id");
-        String generateToken = generateToken(id, userAccount);
+        String generateToken = generateToken(id);
         return generateToken;
     }
 }

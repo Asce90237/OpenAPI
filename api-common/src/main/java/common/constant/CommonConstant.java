@@ -21,4 +21,6 @@ public interface CommonConstant {
      * 网关接口调用通用返回异常
      */
     String INVOKE_ERROR = "{\"code\":50003,\"message\":\"接口异常，请稍后再试或联系管理员处理！\"}";
+
+    String JWT_CACHE_PREFIX = "login:";
 }

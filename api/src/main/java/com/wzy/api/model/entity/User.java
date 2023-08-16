@@ -20,7 +20,7 @@ import java.util.stream.Collectors;
  */
 @TableName(value = "user")
 @Data
-public class User implements Serializable , UserDetails {
+public class User implements Serializable {
     /**
      * id ：雪花算法生成
      */
@@ -80,52 +80,4 @@ public class User implements Serializable , UserDetails {
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
-
-    /**
-     * 配置用户权限
-     * @return
-     */
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        List<String> permissions = new ArrayList<>();
-        String temp = "ROLE_"+userRole;
-        permissions.add(temp);
-        List<SimpleGrantedAuthority> authorities =
-                permissions.stream().map(SimpleGrantedAuthority::new).collect(Collectors.toList());
-        return authorities;
-    }
-
-    public String getNickName() {
-        return userName;
-    }
-
-    @Override
-    public String getPassword() {
-        return userPassword;
-    }
-
-    @Override
-    public String getUsername() {
-        return userAccount;
-    }
-
-    @Override
-    public boolean isAccountNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isAccountNonLocked() {
-        return true;
-    }
-
-    @Override
-    public boolean isCredentialsNonExpired() {
-        return true;
-    }
-
-    @Override
-    public boolean isEnabled() {
-        return true;
-    }
 }

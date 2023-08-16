@@ -4,14 +4,11 @@ import cn.hutool.captcha.CaptchaUtil;
 import cn.hutool.captcha.LineCaptcha;
 import cn.hutool.captcha.generator.RandomGenerator;
 import cn.hutool.core.util.DesensitizedUtil;
-import cn.hutool.core.util.ReUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
-import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONUtil;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -20,26 +17,26 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wzy.api.common.*;
 import com.wzy.api.constant.UserConstant;
 import com.wzy.api.feign.ApiOrderFeignClient;
+import com.wzy.api.mapper.AuthMapper;
 import com.wzy.api.mapper.InterfaceInfoMapper;
 import com.wzy.api.mapper.UserInterfaceInfoMapper;
-import com.wzy.api.service.UserInterfaceInfoService;
-import com.wzy.api.utils.GenerateKeyUtil;
-import common.Exception.BusinessException;
-import com.wzy.api.mapper.AuthMapper;
 import com.wzy.api.mapper.UserMapper;
 import com.wzy.api.model.dto.user.UserBindPhoneRequest;
 import com.wzy.api.model.dto.user.UserLoginBySmsRequest;
 import com.wzy.api.model.dto.user.UserQueryRequest;
 import com.wzy.api.model.dto.user.UserRegisterRequest;
 import com.wzy.api.model.entity.Auth;
+import com.wzy.api.model.entity.LoginUser;
 import com.wzy.api.model.entity.User;
 import com.wzy.api.model.vo.UserVO;
 import com.wzy.api.service.UserService;
+import com.wzy.api.utils.GenerateKeyUtil;
 import common.AuthPhoneNumber;
 import common.BaseResponse;
 import common.ErrorCode;
-import common.Utils.CookieUtils;
+import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
+import common.constant.CommonConstant;
 import common.constant.CookieConstant;
 import common.constant.RedisConstant;
 import common.to.Oauth2ResTo;
@@ -53,6 +50,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -63,6 +61,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import javax.jws.soap.SOAPBinding;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -118,6 +117,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private AuthenticationManager authenticationManager;
 
     @Autowired
     private MobileSignature mobileSignature;
@@ -246,14 +248,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (userPassword.length() < 8) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码错误");
         }
-        UserDetails userDetails = userDetailsService.loadUserByUsername(userAccount);
-        // 2. 加密
-        String password = userDetails.getPassword();
-        if (!passwordEncoder.matches(userPassword,password)) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号或密码错误");
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userAccount, userPassword);
+        Authentication authenticate = authenticationManager.authenticate(authenticationToken);
+        if (authenticate == null) {
+            throw new BusinessException(ErrorCode.ACCOUNT_OR_PASSWORD_ERROR);
         }
-        User user=  (User) userDetails;
-        user.setUserPassword(null);
+        LoginUser user = (LoginUser) authenticate.getPrincipal();
         return initUserLogin(user,response);
     }
 
@@ -355,7 +355,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         List<UserVO> userVOList = userList.stream().map(user -> {
             UserVO userVO = new UserVO();
             BeanUtils.copyProperties(user, userVO);
-            userVO.setUserName(user.getNickName());
             return userVO;
         }).collect(Collectors.toList());
         return ResultUtils.success(userVOList);
@@ -388,7 +387,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         List<UserVO> userVOList = userPage.getRecords().stream().map(user -> {
             UserVO userVO = new UserVO();
             BeanUtils.copyProperties(user, userVO);
-            userVO.setUserName(user.getNickName());
             return userVO;
         }).collect(Collectors.toList());
         userVOPage.setRecords(userVOList);
@@ -410,7 +408,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         //验证手机号的合法性
         AuthPhoneNumber authPhoneNumber = new AuthPhoneNumber();
-        if(!authPhoneNumber.isPhoneNum(mobile.toString())){
+        if(!authPhoneNumber.isPhoneNum(mobile)){
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "手机号非法");
         }
         //验证用户输入的手机号和验证码是否匹配
@@ -418,12 +416,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!verify){
             throw new BusinessException(ErrorCode.SMS_CODE_ERROR);
         }
-        //验证该手机号是否完成注册
-        //loadUserByUsername此方法被UserDetailsImpl实现，功能为查询是否有此账号或此手机号
-        //若没有，抛出异常，返回用户不存在；若有，隐藏手机号，并返回User对象
-        UserDetails userDetails = userDetailsService.loadUserByUsername(mobile);
-        User user=  (User) userDetails;
-        user.setUserPassword(null);
+        //验证该手机号是否完成注册 todo
+        //若没有，会自动抛出异常;若有，隐藏手机号，并返回User对象
+        LoginUser user = (LoginUser) userDetailsService.loadUserByUsername(mobile);
         LoginUserVo loginUserVo = initUserLogin(user,response);
         return ResultUtils.success(loginUserVo);
     }
@@ -643,63 +638,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
-     * 检查用户登录状态 todo 修改登录验证，写的什么几把玩意
+     * 检查用户登录状态
      * @param request
      * @param response
      * @return
      */
     @Override
     public BaseResponse checkUserLogin(HttpServletRequest request, HttpServletResponse response) {
-        // 先判断是否已登录
-        Principal userPrincipal = request.getUserPrincipal();
-        if (userPrincipal != null){
-            String name = userPrincipal.getName();
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            User currentUser =(User) authentication.getPrincipal();
-            if (currentUser == null || currentUser.getId() == null || !currentUser.getUserAccount().equals(name)) {
-                throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-            }
-            LoginUserVo loginUserVo = new LoginUserVo();
-            BeanUtils.copyProperties(currentUser,loginUserVo);
-            return ResultUtils.success(loginUserVo);
-        }else {
-            Cookie[] cookies = request.getCookies();
-            if ( null == cookies || cookies.length == 0){
-                return ResultUtils.success(null);
-            }
-            String authorization =null;
-            String remember = null;
-            for (Cookie cookie : cookies) {
-                String name = cookie.getName();
-                if (CookieConstant.headAuthorization.equals(name)){
-                    authorization = cookie.getValue();
-                }
-                if (CookieConstant.autoLoginAuthCheck.equals(name)){
-                    remember = cookie.getValue();
-                }
-            }
-            if (null == authorization || null == remember){
-                throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-            }
-            CookieUtils cookieUtils = new CookieUtils();
-            String[] strings = cookieUtils.decodeAutoLoginKey(remember);
-            if (strings.length!=3){
-                throw new BusinessException(ErrorCode.ILLEGAL_ERROR,"请重新登录");
-            }
-            String sId = strings[0];
-            String sUserAccount = strings[1];
-            JWT jwt = JWTUtil.parseToken(authorization);
-            String id = (String) jwt.getPayload("id");
-            String userAccount = (String) jwt.getPayload("userAccount");
-            if (!sId.equals(id) || !sUserAccount.equals(userAccount)){
-                throw new BusinessException(ErrorCode.PARAMS_ERROR,"请重新登录");
-            }
-            User byId = this.getById(id);
-            byId.setUserPassword(null);
-            String phone = DesensitizedUtil.mobilePhone(byId.getMobile());
-            byId.setMobile(phone);
-            return ResultUtils.success(initUserLogin(byId,response));
-        }
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        LoginUser principal = (LoginUser) authentication.getPrincipal();
+        LoginUserVo loginUserVo = new LoginUserVo();
+        BeanUtils.copyProperties(principal.getUser(),loginUserVo);
+        return ResultUtils.success(loginUserVo);
     }
 
     /**
@@ -751,7 +701,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser =(User) authentication.getPrincipal();
         currentUser.setMobile(phone);
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(currentUser, null, currentUser.getAuthorities());
+        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(currentUser, null, null);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
         return ResultUtils.success(phone);
     }
@@ -841,40 +791,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
 
     /**
-     * 初始化用户登录状态 这里需要经常调用的原因是，每一次请求都应该刷新cookie的过期时间
      * headAuthorization Cookie 是用于存储用户的认证信息，具体包括用户的 Token，用于后续的身份认证和授权。
      * 该 Cookie 的作用是在客户端浏览器中存储用户的认证信息，以便用户在后续的请求中可以携带该认证信息，进行身份认证和授权。
-     * 在这段代码中，使用 CookieConstant.headAuthorization 来作为 Cookie 的名称。
      *
-     * autoLoginAuthCheck Cookie 是用于存储用户的自动登录信息，具体包括用户的 ID 和账号名等信息。
-     * 该 Cookie 的作用是在客户端浏览器中存储用户的自动登录信息，以便用户在下一次访问网站时可以自动登录，而无需再次输入用户名和密码。
-     * 在这段代码中，使用 CookieConstant.autoLoginAuthCheck 来作为 Cookie 的名称。
-     *
-     * 两个 Cookie 的作用不同，一个用于存储用户的认证信息，一个用于存储用户的自动登录信息。
-     * 在实际应用中，这两个 Cookie 可以分别设置不同的过期时间，以达到不同的使用目的。
-     * 同时，为了保护用户的隐私和安全，对于存储用户的敏感信息，应该采用合适的加密算法进行加密，以防止信息泄露和被篡改等风险。
-     * @param user
      */
-    private LoginUserVo initUserLogin(UserDetails user,HttpServletResponse response){
-        //设置到Security 全局对象中去
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+    private LoginUserVo initUserLogin(LoginUser loginUser,HttpServletResponse response) {
         LoginUserVo loginUserVo = new LoginUserVo();
-        BeanUtils.copyProperties(user,loginUserVo);
-        //token载荷信息包括用户id和用户账号
-        String token = tokenUtils.generateToken(String.valueOf(loginUserVo.getId()),loginUserVo.getUserAccount());
-        loginUserVo.setToken(token);
+        BeanUtils.copyProperties(loginUser.getUser(),loginUserVo);
+        //token载荷信息包括用户id
+        String token = tokenUtils.generateToken(String.valueOf(loginUserVo.getId()));
         Cookie cookie = new Cookie(CookieConstant.headAuthorization,token);
         cookie.setPath("/");
         //不设置过期时间，这样cookie就是会话级别的，关闭浏览器就会消失
 //        cookie.setMaxAge(CookieConstant.expireTime);
         response.addCookie(cookie);
-        CookieUtils cookieUtils = new CookieUtils();
-        String autoLoginContent = cookieUtils.generateAutoLoginContent(loginUserVo.getId().toString(), loginUserVo.getUserAccount());
-        Cookie cookie1 = new Cookie(CookieConstant.autoLoginAuthCheck, autoLoginContent);
-        cookie1.setPath("/");
-        cookie.setMaxAge(CookieConstant.expireTime);
-        response.addCookie(cookie1);
+        redisTemplate.opsForValue().set(CommonConstant.JWT_CACHE_PREFIX + loginUser.getUser().getId(), loginUser, 1, TimeUnit.HOURS);
         return loginUserVo;
     }
 
