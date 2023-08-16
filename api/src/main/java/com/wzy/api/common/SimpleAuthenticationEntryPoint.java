@@ -14,7 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
- * @YukeSeko
+ * @Asce
  * 自定义认证异常处理类：对应401
  */
 @Component

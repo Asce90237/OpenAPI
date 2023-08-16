@@ -33,7 +33,7 @@ public class InterfaceClientController {
      * @return
      */
     @PostMapping("/apiclient")
-    public BaseResponse<Object> apiClient(@RequestBody InterfaceInfoInvokRequest userRequestParams, HttpServletRequest request) throws UnsupportedEncodingException {
+    public BaseResponse<Object> apiClient(@RequestBody InterfaceInfoInvokRequest userRequestParams, HttpServletRequest request) {
         if (userRequestParams == null || userRequestParams.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }

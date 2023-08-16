@@ -3,6 +3,7 @@ package com.wzy.api.config;
 import com.wzy.api.common.SimpleAccessDeniedHandler;
 import com.wzy.api.common.SimpleAuthenticationEntryPoint;
 import com.wzy.api.common.UserDetailsImpl;
+import com.wzy.api.interceptor.AuthenticationInterceptor;
 import common.constant.CookieConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -54,6 +55,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private SimpleAccessDeniedHandler simpleAccessDeniedHandler;
+
+    @Autowired
+    private AuthenticationInterceptor authenticationInterceptor;
 
     @Autowired
     @Lazy

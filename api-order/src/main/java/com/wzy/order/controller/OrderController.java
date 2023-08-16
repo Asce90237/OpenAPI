@@ -1,17 +1,16 @@
 package com.wzy.order.controller;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wzy.order.model.entity.ApiOrder;
+import com.wzy.api.provider.InnerService;
 import com.wzy.order.model.to.ApiOrderCancelDto;
 import com.wzy.order.model.to.ApiOrderDto;
 import com.wzy.order.model.to.ApiOrderStatusInfoDto;
 import com.wzy.order.model.vo.ApiOrderStatusVo;
 import com.wzy.order.service.ApiOrderService;
 import common.BaseResponse;
-import common.Utils.ResultUtils;
 import common.vo.OrderSnVo;
 import io.swagger.annotations.Api;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +29,9 @@ public class OrderController {
 
     @Autowired
     private ApiOrderService apiOrderService;
+
+    @DubboReference
+    private InnerService innerService;
 
 
     /**

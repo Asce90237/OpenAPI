@@ -17,9 +17,21 @@ public interface UserMapper extends BaseMapper<User> {
 
     String getUserNameByPhone(@Param("username") String username);
 
-    String selectPhone(@Param("mobile") String mobile);
+    /**
+     * 查询手机号是否存在
+     * @param mobile
+     * @return
+     */
+    boolean phoneExits(@Param("mobile") String mobile);
 
     List<EchartsVo> getUserList(@Param("dateList") List<String> dateList);
+
+    /**
+     * 查询账户是否存在
+     * @param userAccount
+     * @return
+     */
+    boolean userAccountExits(String userAccount);
 }
 
 

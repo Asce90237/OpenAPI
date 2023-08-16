@@ -114,4 +114,11 @@ public class InnerServiceImpl implements InnerService {
         InterfaceInfo one = interfaceInfoService.getOne(queryWrapper);
         return one.getRequestParams().equals(CommonConstant.INTERFACE_PARAM_STATUS);
     }
+
+    @Override
+    public boolean test(long interfaceInfoId, long userId, long addNum) {
+        boolean update = userInterfaceInfoService.update(new UpdateWrapper<UserInterfaceInfo>().eq("userId", userId).eq("interfaceInfoId", interfaceInfoId)
+                .setSql("leftNum = leftNum +" + addNum));
+        return update;
+    }
 }

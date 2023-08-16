@@ -54,4 +54,6 @@ public interface InnerService {
      * 判断参数是否可以为空
      */
     boolean paramsIsValid(long interfaceInfoId);
+
+    boolean test(long interfaceInfoId, long userId, long addNum);
 }

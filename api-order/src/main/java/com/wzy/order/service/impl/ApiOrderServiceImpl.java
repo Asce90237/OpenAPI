@@ -97,7 +97,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     @Transactional(rollbackFor = Exception.class)
     @Override
     public BaseResponse<OrderSnVo> generateOrderSn(@RequestBody ApiOrderDto apiOrderDto, HttpServletRequest request, HttpServletResponse response) throws ExecutionException, InterruptedException {
-        //1、远程获取当前登录用户
+        //1、远程获取当前登录用户 todo 修改
         BaseResponse baseResponse = userFeignServices.checkUserLogin();
         LoginUserVo loginUserVo = JSONUtil.toBean(JSONUtil.parseObj(baseResponse.getData()), LoginUserVo.class);
         if (null == loginUserVo){

@@ -29,9 +29,12 @@ public class ApiClient {
         this.secretKey = secretKey;
     }
 
-    public BaseResponse getResult(Api api) throws UnsupportedEncodingException {
-        if (api.getParameter() != null) {
-            String encodedParameter = URLEncoder.encode(api.getParameter(), StandardCharsets.UTF_8.toString());
+    public BaseResponse getResult(Api api) {
+        String encodedParameter = "";
+        try {
+            encodedParameter = URLEncoder.encode(api.getParameter(), StandardCharsets.UTF_8.toString());
+        } catch (Exception e) {
+        } finally {
             api.setParameter(encodedParameter);
         }
         String json = JSONUtil.toJsonStr(api);

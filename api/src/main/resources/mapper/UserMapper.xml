@@ -31,8 +31,12 @@
         SELECT userAccount FROM `user` WHERE mobile = #{username} AND isDelete = 0
     </select>
     <!--根据手机号查手机号，判断手机号是否重复-->
-    <select id="selectPhone" resultType="java.lang.String">
-        SELECT mobile FROM `user` WHERE mobile = #{mobile} AND isDelete = 0
+    <select id="phoneExits" resultType="java.lang.Boolean">
+        SELECT EXISTS (
+                       SELECT 1
+                       FROM user
+                       WHERE mobile = #{mobile}
+                   );
     </select>
     <select id="getUserList" resultType="common.vo.EchartsVo">
         SELECT
@@ -48,6 +52,13 @@
         DATE_FORMAT(createTime, '%Y-%m-%d')
         ORDER BY
         DATE_FORMAT(createTime, '%Y-%m-%d') DESC;
+    </select>
+    <select id="userAccountExits" resultType="java.lang.Boolean">
+        SELECT EXISTS (
+                       SELECT 1
+                       FROM user
+                       WHERE userAccount = #{userAccount}
+                   );
     </select>
 
 </mapper>

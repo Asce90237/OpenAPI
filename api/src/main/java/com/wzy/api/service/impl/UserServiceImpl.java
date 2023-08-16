@@ -23,6 +23,7 @@ import com.wzy.api.feign.ApiOrderFeignClient;
 import com.wzy.api.mapper.InterfaceInfoMapper;
 import com.wzy.api.mapper.UserInterfaceInfoMapper;
 import com.wzy.api.service.UserInterfaceInfoService;
+import com.wzy.api.utils.GenerateKeyUtil;
 import common.Exception.BusinessException;
 import com.wzy.api.mapper.AuthMapper;
 import com.wzy.api.mapper.UserMapper;
@@ -129,6 +130,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Autowired
     private ApiOrderFeignClient apiOrderFeignClient;
+
+    @Resource
+    private GenerateKeyUtil generateKeyUtil;
     // captcha 验证码
     private static final String CAPTCHA_PREFIX = "api:captchaId:";
 
@@ -138,7 +142,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param request
      * @return
      */
-    //在@Transactional注解中如果不配置rollbackFor属性,那么事物只会在遇到RuntimeException的时候才会回滚,加上rollbackFor=Exception.class,可以让事务在遇到非运行时异常时也回滚
     @Transactional(rollbackFor = Exception.class) //抛出异常即回滚，包括数据库
     @Override
     public long userRegister(UserRegisterRequest userRegisterRequest ,HttpServletRequest request) {
@@ -162,7 +165,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         String picCaptcha = (String) redisTemplate.opsForValue().get(CAPTCHA_PREFIX + signature);
-        if (null == picCaptcha || authPhoneNumber.isCaptcha(captcha) || !captcha.equals(picCaptcha)){
+        if (authPhoneNumber.isCaptcha(captcha) || !captcha.equals(picCaptcha)){
             throw new BusinessException(ErrorCode.SMS_CODE_ERROR,"图形验证码错误或已经过期，请重新刷新验证码");
         }
         if (userAccount.length() < 4) {
@@ -186,23 +189,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         // String变量锁
         synchronized (userAccount.intern()) {
             // 账户不能重复
-            QueryWrapper<User> queryWrapper = new QueryWrapper<>();
-            queryWrapper.eq("userAccount", userAccount);
-            long count = userMapper.selectCount(queryWrapper);
-            if (count > 0) {
+            boolean userAccountExits = userMapper.userAccountExits(userAccount);
+            if (userAccountExits) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
             }
             //手机号不能重复
-            String getMapperPhone = userMapper.selectPhone(mobile);
-            if (null != getMapperPhone){
+            boolean phone = userMapper.phoneExits(mobile);
+            if (phone){
                 throw new BusinessException(ErrorCode.PARAMS_ERROR,"手机号已经被注册");
             }
             // 2. 加密
             String encryptPassword = passwordEncoder.encode(userPassword);
             // 3. 生成初始密钥 设计规则 随机9位数数字
             String appId = String.valueOf((int) ((Math.random() * 9 + 1) * Math.pow(10, 9 - 1)));
-            String accessKey = generateAuthUtils.accessKey(appId);
-            String secretKey = generateAuthUtils.secretKey(appId,userAccount);
+            String accessKey = generateKeyUtil.generateAk(userAccount);
+            String secretKey = generateKeyUtil.generateSk(userAccount);
             String token = generateAuthUtils.token(appId,userAccount, accessKey, secretKey);
             Auth auth = new Auth();
             auth.setUseraccount(userAccount);
@@ -642,7 +643,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
-     * 检查用户登录状态
+     * 检查用户登录状态 todo 修改登录验证，写的什么几把玩意
      * @param request
      * @param response
      * @return
@@ -655,7 +656,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             String name = userPrincipal.getName();
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             User currentUser =(User) authentication.getPrincipal();
-            if (currentUser == null || currentUser.getId() == null || null == name || !currentUser.getUserAccount().equals(name)) {
+            if (currentUser == null || currentUser.getId() == null || !currentUser.getUserAccount().equals(name)) {
                 throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
             }
             LoginUserVo loginUserVo = new LoginUserVo();
@@ -735,8 +736,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         synchronized (userAccount.intern()){
             //手机号不能重复
-            String getMapperPhone = userMapper.selectPhone(mobile);
-            if (null != getMapperPhone){
+            boolean phone = userMapper.phoneExits(mobile);
+            if (phone){
                 throw new BusinessException(ErrorCode.PARAMS_ERROR,"手机号已经被注册");
             }
             boolean update = this.update(new UpdateWrapper<User>().eq("id", id).eq("userAccount", userAccount).set("mobile", mobile));
@@ -865,7 +866,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         loginUserVo.setToken(token);
         Cookie cookie = new Cookie(CookieConstant.headAuthorization,token);
         cookie.setPath("/");
-        cookie.setMaxAge(CookieConstant.expireTime);
+        //不设置过期时间，这样cookie就是会话级别的，关闭浏览器就会消失
+//        cookie.setMaxAge(CookieConstant.expireTime);
         response.addCookie(cookie);
         CookieUtils cookieUtils = new CookieUtils();
         String autoLoginContent = cookieUtils.generateAutoLoginContent(loginUserVo.getId().toString(), loginUserVo.getUserAccount());

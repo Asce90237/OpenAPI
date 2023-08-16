@@ -1,17 +1,11 @@
 package com.wzy.api;
 
-import cn.hutool.json.JSONUtil;
-import com.alibaba.nacos.common.model.RestResult;
-import com.wzy.apiclient.model.Api;
-import com.yupi.yucongming.dev.client.YuCongMingClient;
-import com.yupi.yucongming.dev.common.BaseResponse;
-import com.yupi.yucongming.dev.model.DevChatRequest;
-import com.yupi.yucongming.dev.model.DevChatResponse;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.crypto.digest.DigestUtil;
 
-import javax.annotation.Resource;
 import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.util.Base64;
 
 
 /**
@@ -19,13 +13,27 @@ import java.nio.charset.StandardCharsets;
  */
 public class test {
 
-    public static void main(String[] args) throws UnsupportedEncodingException {
-        Api api = new Api();
-        api.setInterfaceId(31L);
-        String encodedParameter = URLEncoder.encode("好笑", StandardCharsets.UTF_8.toString());
-        api.setParameter(encodedParameter);
-        String json = JSONUtil.toJsonStr(api);
-        System.out.println(json);
+    /**
+     * 盐值，混淆密码
+     */
+    private static final String SALT = "Asce";
+
+    public static void main(String[] args) {
+        long begin = System.currentTimeMillis();
+        String userAccount = "user";
+        String accessKey = DigestUtil.md5Hex(SALT + userAccount + RandomUtil.randomNumbers(5));
+        System.out.println(accessKey);
+        long end = System.currentTimeMillis();
+        System.out.println(end - begin);
+        long begin1 = System.currentTimeMillis();
+        SecureRandom random = new SecureRandom();
+        byte[] saltBytes = new byte[16];
+        random.nextBytes(saltBytes);
+        String salt = Base64.getEncoder().encodeToString(saltBytes);
+        String accessKey1 = DigestUtil.md5Hex(salt + userAccount + RandomUtil.randomNumbers(5));
+        System.out.println(accessKey1);
+        long end1 = System.currentTimeMillis();
+        System.out.println(end1 - begin1);
     }
 
 }
