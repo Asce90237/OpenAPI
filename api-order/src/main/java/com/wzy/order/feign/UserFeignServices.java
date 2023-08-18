@@ -1,9 +1,9 @@
 package com.wzy.order.feign;
 
-import common.BaseResponse;
-import common.to.GetAvailablePiecesTo;
-import common.to.LeftNumUpdateTo;
-import common.vo.LockChargingVo;
+import common.model.BaseResponse;
+import common.model.to.GetAvailablePiecesTo;
+import common.model.to.LeftNumUpdateTo;
+import common.model.vo.LockChargingVo;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

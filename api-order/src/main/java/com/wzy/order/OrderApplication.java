@@ -12,8 +12,8 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
  */
 @SpringBootApplication
 @EnableDiscoveryClient
-@EnableFeignClients
 @EnableDubbo
+@EnableFeignClients
 @MapperScan("com.wzy.order.mapper")
 public class OrderApplication {
     public static void main(String[] args) {

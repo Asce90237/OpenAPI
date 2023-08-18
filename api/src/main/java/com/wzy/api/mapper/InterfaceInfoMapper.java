@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wzy.api.model.dto.interfaceinfo.InterfaceInfoQueryRequest;
 import com.wzy.api.model.entity.InterfaceInfo;
 import com.wzy.api.model.vo.AllInterfaceInfoVo;
-import common.vo.EchartsVo;
+import common.model.vo.EchartsVo;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

@@ -1,7 +1,7 @@
 package com.wzy.api.model.dto.userinterfaceinfo;
 
 
-import common.PageRequest;
+import common.model.request.PageRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

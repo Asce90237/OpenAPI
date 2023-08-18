@@ -2,19 +2,17 @@ package com.wzy.api.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wzy.api.annotation.AuthCheck;
-import com.wzy.api.common.DeleteRequest;
-import com.wzy.api.constant.UserConstant;
+import com.wzy.api.model.dto.request.DeleteRequest;
 import com.wzy.api.model.dto.user.*;
 import com.wzy.api.model.entity.User;
 import com.wzy.api.model.vo.UserVO;
 import com.wzy.api.service.UserService;
-import common.BaseResponse;
-import common.ErrorCode;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
-import common.to.Oauth2ResTo;
-import common.vo.LoginUserVo;
+import common.model.to.Oauth2ResTo;
+import common.model.vo.LoginUserVo;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -40,23 +38,10 @@ public class UserController {
     @Resource
     private UserService userService;
 
-    @PostMapping("/hello")
-    public String hello(){
-        return "hello";
-    }
-
-    // region 登录相关
-
     @ApiOperation("获取echarts需要展示的数据")
     @GetMapping("/getEchartsData")
     public BaseResponse getEchartsData(){
         return userService.getEchartsData();
-    }
-
-    @ApiOperation("获取全站接口调用次数")
-    @GetMapping("/getTotalApiInvokeCnt")
-    public BaseResponse getTotalApiInvokeCnt(){
-        return userService.getTotalCnt();
     }
 
     @ApiOperation("获取全站用户数")
@@ -137,7 +122,7 @@ public class UserController {
 
     @ApiOperation("用户通过 用户名和密码 登录")
     @PostMapping("/login")
-    public BaseResponse<LoginUserVo> userLoginByPwd(@RequestBody UserLoginRequest userLoginRequest, HttpServletResponse response) {
+    public BaseResponse<LoginUserVo> userLoginByPwd(UserLoginRequest userLoginRequest, HttpServletResponse response) {
         if (userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -162,9 +147,9 @@ public class UserController {
 
 
     @ApiOperation("用户注销")
-    @GetMapping("/logoutSuccess")
+    @GetMapping("/logout")
     public BaseResponse logoutSuccess(HttpServletResponse response){
-        return ResultUtils.success("退出成功！");
+        return userService.logout(response);
     }
 
 
@@ -213,10 +198,7 @@ public class UserController {
 
     @ApiOperation("分页获取用户列表")
     @GetMapping("/list/page")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Page<UserVO>> listUserByPage(UserQueryRequest userQueryRequest, HttpServletRequest request) {
         return userService.listUserByPage(userQueryRequest);
     }
-
-    // endregion
 }

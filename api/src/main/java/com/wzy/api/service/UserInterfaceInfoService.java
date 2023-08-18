@@ -3,8 +3,8 @@ package com.wzy.api.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.wzy.api.model.entity.UserInterfaceInfo;
-import common.BaseResponse;
-import common.to.LeftNumUpdateTo;
+import common.model.BaseResponse;
+import common.model.to.LeftNumUpdateTo;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -30,4 +30,10 @@ public interface UserInterfaceInfoService extends IService<UserInterfaceInfo> {
      * @return
      */
     BaseResponse updateUserLeftNum(LeftNumUpdateTo leftNumUpdateTo);
+
+    /**
+     * 获取全站接口总调用次数
+     * @return
+     */
+    BaseResponse getTotalCnt();
 }

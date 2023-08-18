@@ -1,7 +1,7 @@
 package common.Utils;
 
-import common.BaseResponse;
-import common.ErrorCode;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 
 /**
  * 返回工具类

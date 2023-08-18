@@ -79,12 +79,13 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Dubbo Nacos -->
+<!--        Dubbo Nacos-->
         <dependency>
             <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo</artifactId>
             <version>3.0.9</version>
         </dependency>
+
 
         <!-- dubbo-registry-nacos -->
         <dependency>

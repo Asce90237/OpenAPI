@@ -2,9 +2,8 @@ package com.wzy.api.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wzy.api.annotation.AuthCheck;
-import com.wzy.api.common.DeleteRequest;
-import com.wzy.api.common.IdRequest;
+import com.wzy.api.model.dto.request.DeleteRequest;
+import com.wzy.api.model.dto.request.IdRequest;
 import com.wzy.api.model.dto.interfaceinfo.InterfaceInfoAddRequest;
 import com.wzy.api.model.dto.interfaceinfo.InterfaceInfoQueryRequest;
 import com.wzy.api.model.dto.interfaceinfo.InterfaceInfoUpdateRequest;
@@ -12,9 +11,9 @@ import com.wzy.api.model.entity.InterfaceInfo;
 import com.wzy.api.model.vo.AllInterfaceInfoVo;
 import com.wzy.api.model.vo.InterfaceInfoVo;
 import com.wzy.api.service.InterfaceInfoService;
-import common.BaseResponse;
+import common.model.BaseResponse;
 import common.Utils.ResultUtils;
-import common.to.GetAvailablePiecesTo;
+import common.model.to.GetAvailablePiecesTo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +35,7 @@ public class InterfaceInfoController {
 
 
     /**
-     * 获取全站可调用接口数
+     * 获取全站已上线接口数
      * @return
      */
     @GetMapping("/getInterfaceCount")
@@ -118,7 +117,6 @@ public class InterfaceInfoController {
      * @param interfaceInfoQueryRequest
      * @return
      */
-    @AuthCheck(mustRole = "admin")
     @GetMapping("/list")
     public BaseResponse<List<InterfaceInfo>> listInterfaceInfo(InterfaceInfoQueryRequest interfaceInfoQueryRequest) {
         InterfaceInfo interfaceInfoQuery = new InterfaceInfo();
@@ -149,7 +147,6 @@ public class InterfaceInfoController {
      * @return
      */
     @GetMapping("/list/AllPage")
-    @AuthCheck(mustRole = "admin")
     public BaseResponse<Page<AllInterfaceInfoVo>> getAllInterfaceInfoByPage(InterfaceInfoQueryRequest interfaceInfoQueryRequest, HttpServletRequest request) {
         return interfaceInfoService.getAllInterfaceInfoByPage(interfaceInfoQueryRequest,request);
     }
@@ -163,7 +160,6 @@ public class InterfaceInfoController {
      * @return
      */
     @PostMapping("/online")
-    @AuthCheck(mustRole = "admin")
     public BaseResponse<Boolean> onlineInterfaceInfo(@RequestBody IdRequest idRequest, HttpServletRequest request) {
         return interfaceInfoService.onlineInterfaceInfo(idRequest);
     }
@@ -176,7 +172,6 @@ public class InterfaceInfoController {
      * @return
      */
     @PostMapping("/offline")
-    @AuthCheck(mustRole = "admin")
     public BaseResponse<Boolean> offlineInterfaceInfo(@RequestBody IdRequest idRequest) {
         return interfaceInfoService.offlineInterfaceInfo(idRequest);
     }

@@ -1,10 +1,10 @@
 package com.wzy.api.schedule;
 
 import cn.hutool.json.JSONUtil;
-import com.wzy.api.common.RabbitUtils;
+import com.wzy.api.utils.RabbitUtils;
 import common.constant.LockConstant;
 import common.constant.RabbitMqConstant;
-import common.to.SmsTo;
+import common.model.to.SmsTo;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
@@ -14,7 +14,6 @@ import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Set;

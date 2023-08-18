@@ -7,12 +7,11 @@ import com.wzy.order.model.to.ApiOrderCancelDto;
 import com.wzy.order.model.to.ApiOrderDto;
 import com.wzy.order.model.to.ApiOrderStatusInfoDto;
 import com.wzy.order.model.vo.ApiOrderStatusVo;
-import common.BaseResponse;
-import common.vo.OrderSnVo;
+import common.model.BaseResponse;
+import common.model.vo.OrderSnVo;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 
@@ -62,13 +61,6 @@ public interface ApiOrderService extends IService<ApiOrder> {
      * @return
      */
     BaseResponse<Page<ApiOrderStatusVo>> getCurrentOrderInfo(ApiOrderStatusInfoDto statusInfoDto, HttpServletRequest request);
-
-    /**
-     * 获取echarts图中最近7天的交易数
-     * @param dateList
-     * @return
-     */
-    BaseResponse getOrderEchartsData(List<String> dateList);
 
     /**
      * 成功交易订单数量

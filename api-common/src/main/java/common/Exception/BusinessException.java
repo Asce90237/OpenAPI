@@ -1,7 +1,7 @@
 package common.Exception;
 
 
-import common.ErrorCode;
+import common.model.enums.ErrorCode;
 
 /**
  * 自定义异常类

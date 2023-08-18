@@ -3,7 +3,6 @@ package com.wzy.order.service.impl;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.json.JSONObject;
@@ -24,19 +23,23 @@ import com.wzy.order.model.to.ApiOrderStatusInfoDto;
 import com.wzy.order.model.vo.ApiOrderStatusVo;
 import com.wzy.order.service.ApiOrderLockService;
 import com.wzy.order.service.ApiOrderService;
-import common.BaseResponse;
-import common.ErrorCode;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
 import common.constant.CookieConstant;
 import common.constant.OrderConstant;
 import common.constant.RedisConstant;
 import common.model.entity.InterfaceInfo;
-import common.to.GetAvailablePiecesTo;
-import common.vo.*;
+import common.model.to.GetAvailablePiecesTo;
+import common.model.vo.LockChargingVo;
+import common.model.vo.LoginUserVo;
+import common.model.vo.OrderInterfaceInfoVo;
+import common.model.vo.OrderSnVo;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +47,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
 
+import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -78,14 +82,14 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     @Autowired
     private RabbitOrderUtils rabbitOrderUtils;
 
-    @Autowired
+    @Resource
     private ApiOrderMapper apiOrderMapper;
 
     @Autowired
     private ThreadPoolExecutor executor;
 
-    @Autowired
-    private Snowflake snowflake;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     /**
      * 生成订单
@@ -306,26 +310,15 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     }
 
     /**
-     * 获取echarts图中最近7天的交易数
-     * @param dateList
-     * @return
-     */
-    @Override
-    public BaseResponse getOrderEchartsData(List<String> dateList) {
-        List<EchartsVo> list = apiOrderMapper.getOrderEchartsData(dateList);
-        return ResultUtils.success(list);
-    }
-
-    /**
      * 成功交易订单数量
      * @return
      */
     @Override
     public BaseResponse<String> getSuccessOrderCnt() {
-        String cnt = (String) redisTemplate.opsForValue().get(RedisConstant.API_INDEX_ORDER_CNT);
+        String cnt = stringRedisTemplate.opsForValue().get(RedisConstant.API_INDEX_ORDER_CNT);
         if (cnt == null) {
             cnt = String.valueOf(this.count(new QueryWrapper<ApiOrder>().eq("status",1)));
-            redisTemplate.opsForValue().set(RedisConstant.API_INDEX_ORDER_CNT, cnt, 1, TimeUnit.DAYS);
+            stringRedisTemplate.opsForValue().set(RedisConstant.API_INDEX_ORDER_CNT, cnt, 1, TimeUnit.DAYS);
         }
         return ResultUtils.success(cnt);
     }

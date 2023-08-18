@@ -1,6 +1,6 @@
 package com.wzy.order.model.to;
 
-import common.PageRequest;
+import common.model.request.PageRequest;
 import lombok.Data;
 
 import java.io.Serializable;

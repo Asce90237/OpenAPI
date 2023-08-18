@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.wzy.api.common.DeleteRequest;
-import com.wzy.api.common.IdRequest;
-import com.wzy.api.common.RedisTemplateUtils;
+import com.wzy.api.model.dto.request.DeleteRequest;
+import com.wzy.api.model.dto.request.IdRequest;
+import com.wzy.api.utils.RedisTemplateUtils;
 import common.Exception.BusinessException;
 import com.wzy.api.mapper.InterfaceInfoMapper;
 import com.wzy.api.model.dto.interfaceinfo.InterfaceInfoAddRequest;
@@ -23,17 +23,15 @@ import com.wzy.api.service.InterfaceChargingService;
 import com.wzy.api.service.InterfaceInfoService;
 import com.wzy.api.service.UserInterfaceInfoService;
 import com.wzy.api.service.UserService;
-import common.BaseResponse;
-import common.ErrorCode;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 import common.Utils.ResultUtils;
-import common.constant.LockConstant;
 import common.constant.RedisConstant;
 import org.apache.commons.lang3.StringUtils;
-import org.redisson.api.RLock;
-import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +66,9 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
 
     @Autowired
     private RedisTemplate redisTemplate;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     /**
      * 校验接口是否可用
@@ -188,8 +189,6 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
         }
         long newInterfaceInfoId = interfaceInfo.getId();
-        redisTemplateUtils.delAllOnlinePage();
-        redisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
         return ResultUtils.success(newInterfaceInfoId);
     }
 
@@ -221,8 +220,6 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         if (!b || ! interfaceid){
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
         }
-        redisTemplateUtils.delAllOnlinePage();
-        redisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
         return ResultUtils.success(b);
     }
 
@@ -269,8 +266,9 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         interfaceInfo.setId(id);
         interfaceInfo.setStatus(InterFaceInfoEnum.ONLINE.getValue());
         boolean result = this.updateById(interfaceInfo);
+        // 先操作数据库再删缓存
         redisTemplateUtils.delAllOnlinePage();
-        redisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
+        stringRedisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
         return ResultUtils.success(result);
     }
 
@@ -296,8 +294,9 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         interfaceInfo.setId(id);
         interfaceInfo.setStatus(InterFaceInfoEnum.OFFLINE.getValue());
         boolean result = this.updateById(interfaceInfo);
+        //先操作数据库，再删缓存
         redisTemplateUtils.delAllOnlinePage();
-        redisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
+        stringRedisTemplate.delete(RedisConstant.API_INDEX_INTERFACE_CNT);
         return ResultUtils.success(result);
     }
 
@@ -378,15 +377,15 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
 
     /**
      *
-     * 获取全站可调用接口数
+     * 获取全站已上线接口数
      * @return
      */
     @Override
     public BaseResponse<String> onlineInterfaceCnt() {
-        String cnt = (String) redisTemplate.opsForValue().get(RedisConstant.API_INDEX_INTERFACE_CNT);
+        String cnt = stringRedisTemplate.opsForValue().get(RedisConstant.API_INDEX_INTERFACE_CNT);
         if (cnt == null) {
             cnt = String.valueOf(this.count(new QueryWrapper<InterfaceInfo>().eq("isDelete",0).eq("status",1)));
-            redisTemplate.opsForValue().set(RedisConstant.API_INDEX_INTERFACE_CNT, cnt, 1, TimeUnit.DAYS);
+            stringRedisTemplate.opsForValue().set(RedisConstant.API_INDEX_INTERFACE_CNT, cnt, 1, TimeUnit.DAYS);
         }
         return ResultUtils.success(cnt);
     }

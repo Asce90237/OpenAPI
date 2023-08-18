@@ -7,19 +7,14 @@ import cn.hutool.core.util.DesensitizedUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
-import cn.hutool.jwt.JWT;
-import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.plugins.pagination.PageDTO;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.wzy.api.common.*;
-import com.wzy.api.constant.UserConstant;
-import com.wzy.api.feign.ApiOrderFeignClient;
+import com.wzy.api.utils.*;
 import com.wzy.api.mapper.AuthMapper;
 import com.wzy.api.mapper.InterfaceInfoMapper;
-import com.wzy.api.mapper.UserInterfaceInfoMapper;
 import com.wzy.api.mapper.UserMapper;
 import com.wzy.api.model.dto.user.UserBindPhoneRequest;
 import com.wzy.api.model.dto.user.UserLoginBySmsRequest;
@@ -31,21 +26,22 @@ import com.wzy.api.model.entity.User;
 import com.wzy.api.model.vo.UserVO;
 import com.wzy.api.service.UserService;
 import com.wzy.api.utils.GenerateKeyUtil;
-import common.AuthPhoneNumber;
-import common.BaseResponse;
-import common.ErrorCode;
+import common.Utils.AuthPhoneNumber;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
 import common.constant.CommonConstant;
 import common.constant.CookieConstant;
-import common.constant.RedisConstant;
-import common.to.Oauth2ResTo;
-import common.to.SmsTo;
-import common.vo.EchartsVo;
-import common.vo.LoginUserVo;
+import common.dubbo.OrderInnerService;
+import common.model.to.Oauth2ResTo;
+import common.model.to.SmsTo;
+import common.model.vo.EchartsVo;
+import common.model.vo.LoginUserVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -54,20 +50,17 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import javax.jws.soap.SOAPBinding;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
-import java.security.Principal;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,6 +80,9 @@ import java.util.stream.Collectors;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         implements UserService {
 
+    @DubboReference
+    private OrderInnerService orderInnerService;
+
     @Resource
     private UserMapper userMapper;
 
@@ -95,12 +91,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private InterfaceInfoMapper interfaceInfoMapper;
-
-    @Resource
-    private UserInterfaceInfoMapper userInterfaceInfoMapper;
-
-    @Autowired
-    private GenerateAuthUtils generateAuthUtils;
 
     @Autowired
     private SmsLimiter smsLimiter;
@@ -129,9 +119,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Autowired
     private Oauth2LoginUtils oauth2LoginUtils;
-
-    @Autowired
-    private ApiOrderFeignClient apiOrderFeignClient;
 
     @Resource
     private GenerateKeyUtil generateKeyUtil;
@@ -206,13 +193,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             String appId = String.valueOf((int) ((Math.random() * 9 + 1) * Math.pow(10, 9 - 1)));
             String accessKey = generateKeyUtil.generateAk(userAccount);
             String secretKey = generateKeyUtil.generateSk(userAccount);
-            String token = generateAuthUtils.token(appId,userAccount, accessKey, secretKey);
             Auth auth = new Auth();
             auth.setUseraccount(userAccount);
             auth.setAppid(Integer.valueOf(appId));
             auth.setAccesskey(accessKey);
             auth.setSecretkey(secretKey);
-            auth.setToken(token);
             // 4. 插入数据
             User user = new User();
             user.setUserAccount(userAccount);
@@ -265,27 +250,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public User getLoginUser(HttpServletRequest request) {
-        // 先判断是否已登录
-        // request.getUserPrincipal()方法是用于获取当前请求的用户主体的方法，在需要进行基于用户身份的操作时可以使用它来获取当前用户的身份信息
-        Principal userPrincipal = request.getUserPrincipal();
-        if(userPrincipal == null){
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        String name = userPrincipal.getName();
-        // 在initUserLogin中设置了authentication
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        // authentication.getPrincipal()获取的就是user对象
-        User currentUser =(User) authentication.getPrincipal();
-        if (currentUser == null || currentUser.getId() == null || null == name || !currentUser.getUserAccount().equals(name)) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        // 从数据库查询（追求性能的话可以注释，直接走缓存）
-        long userId = currentUser.getId();
-        currentUser = this.getById(userId);
-        if (currentUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        return currentUser;
+        LoginUser currentUser = (LoginUser) authentication.getPrincipal();
+        // 追求性能，直接走缓存
+        User user = currentUser.getUser();
+        return user;
     }
 
     /**
@@ -297,9 +266,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Override
     public boolean isAdmin(HttpServletRequest request) {
         // 仅管理员可查询
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User user = (User) principal;
-        return user != null && UserConstant.ADMIN_ROLE.equals(user.getUserRole());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        LoginUser principal = (LoginUser) authentication.getPrincipal();
+        List<String> permissions = principal.getPermissions();
+        return permissions.contains("ROLE_admin");
     }
 
     /**
@@ -707,20 +677,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
-     * 获取全站接口调用总次数
-     * @return
-     */
-    @Override
-    public BaseResponse getTotalCnt() {
-        String total = (String) redisTemplate.opsForValue().get(RedisConstant.API_INDEX_INVOKE_CNT);
-        if (total == null) {
-            total = userInterfaceInfoMapper.getTotalInvokeCount();
-            redisTemplate.opsForValue().set(RedisConstant.API_INDEX_INVOKE_CNT, total, 1, TimeUnit.DAYS);
-        }
-        return ResultUtils.success(total);
-    }
-
-    /**
      * 获取echarts需要展示的数据
      * @return
      */
@@ -736,7 +692,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         ArrayList<Object> objects = new ArrayList<>();
         //2、查询最近7天的交易成功信息
-        BaseResponse orderEchartsData = apiOrderFeignClient.getOrderEchartsData(dateList);
+        BaseResponse orderEchartsData = orderInnerService.getOrderEchartsData(dateList);
         List<EchartsVo> data = (List<EchartsVo>) orderEchartsData.getData();
         //3、根据最近七天的日期去数据库中查询用户信息
         ArrayList<Long> userList = extracted(dateList, userMapper.getUserList(dateList),false);
@@ -809,6 +765,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         return loginUserVo;
     }
 
+    @Override
+    public BaseResponse logout(HttpServletResponse response) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        Long id = loginUser.getUser().getId();
+        redisTemplate.delete(CommonConstant.JWT_CACHE_PREFIX + id);
+        return ResultUtils.success("退出成功!");
+    }
 }
 
 

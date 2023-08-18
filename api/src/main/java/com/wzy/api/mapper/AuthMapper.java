@@ -11,6 +11,8 @@ import com.wzy.api.model.entity.Auth;
 */
 public interface AuthMapper extends BaseMapper<Auth> {
 
+    common.model.entity.Auth getAuthByAk(String accesskey);
+
 }
 
 

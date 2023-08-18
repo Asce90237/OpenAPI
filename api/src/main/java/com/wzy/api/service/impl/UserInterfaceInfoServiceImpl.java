@@ -9,15 +9,19 @@ import com.wzy.api.model.entity.UserInterfaceInfo;
 import com.wzy.api.model.vo.UserInterfaceLeftNumVo;
 import com.wzy.api.service.UserInterfaceInfoService;
 import com.wzy.api.service.UserService;
-import common.BaseResponse;
-import common.ErrorCode;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 import common.Utils.ResultUtils;
-import common.to.LeftNumUpdateTo;
+import common.constant.RedisConstant;
+import common.model.to.LeftNumUpdateTo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
 * @author Asce
@@ -32,8 +36,25 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
     @Autowired
     private UserService userService;
 
-    @Autowired
+    @Resource
     private UserInterfaceInfoMapper userInterfaceInfoMapper;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
+    /**
+     * 获取全站接口调用总次数
+     * @return
+     */
+    @Override
+    public BaseResponse getTotalCnt() {
+        String total = stringRedisTemplate.opsForValue().get(RedisConstant.API_INDEX_INVOKE_CNT);
+        if (total == null) {
+            total = userInterfaceInfoMapper.getTotalInvokeCount();
+            stringRedisTemplate.opsForValue().set(RedisConstant.API_INDEX_INVOKE_CNT, total, 1, TimeUnit.DAYS);
+        }
+        return ResultUtils.success(total);
+    }
 
     @Override
     public void validUserInterfaceInfo(UserInterfaceInfo userInterfaceInfo, boolean add) {

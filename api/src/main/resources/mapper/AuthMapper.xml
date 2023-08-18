@@ -11,7 +11,6 @@
             <result property="appid" column="appId" jdbcType="INTEGER"/>
             <result property="accesskey" column="accessKey" jdbcType="VARCHAR"/>
             <result property="secretkey" column="secretKey" jdbcType="VARCHAR"/>
-            <result property="token" column="token" jdbcType="VARCHAR"/>
             <result property="status" column="status" jdbcType="TINYINT"/>
             <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
             <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
@@ -23,4 +22,15 @@
         appId,accessKey,secretKey,
         token
     </sql>
+
+    <select id="getAuthByAk" resultType="common.model.entity.Auth">
+        select
+            userid,secretkey
+        from
+            auth
+        where
+            accesskey = #{accesskey}
+          and
+            status = 0
+    </select>
 </mapper>

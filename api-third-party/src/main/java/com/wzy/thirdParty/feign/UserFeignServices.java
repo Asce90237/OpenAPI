@@ -1,7 +1,7 @@
 package com.wzy.thirdParty.feign;
 
-import common.BaseResponse;
-import common.to.Oauth2ResTo;
+import common.model.BaseResponse;
+import common.model.to.Oauth2ResTo;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;

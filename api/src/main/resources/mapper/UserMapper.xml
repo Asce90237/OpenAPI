@@ -38,7 +38,7 @@
                        WHERE mobile = #{mobile}
                    );
     </select>
-    <select id="getUserList" resultType="common.vo.EchartsVo">
+    <select id="getUserList" resultType="common.model.vo.EchartsVo">
         SELECT
         COUNT(*) as count ,
         DATE_FORMAT(createTime,'%Y-%m-%d') as date

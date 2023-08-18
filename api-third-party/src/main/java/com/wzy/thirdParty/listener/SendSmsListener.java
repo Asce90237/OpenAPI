@@ -6,7 +6,7 @@ import com.tencentcloudapi.sms.v20210111.models.SendStatus;
 //import com.wzy.thirdParty.Tencent.SendSmsUtils;
 import com.wzy.thirdParty.Tencent.SendSmsUtils;
 import common.constant.RabbitMqConstant;
-import common.to.SmsTo;
+import common.model.to.SmsTo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;

@@ -6,14 +6,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import common.Exception.BusinessException;
 import com.wzy.api.mapper.AuthMapper;
 import com.wzy.api.model.entity.Auth;
-import com.wzy.api.model.entity.User;
 import com.wzy.api.model.vo.AuthVo;
 import com.wzy.api.service.AuthService;
-import common.BaseResponse;
-import common.ErrorCode;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 import common.Utils.ResultUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
@@ -35,21 +33,12 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, Auth>
      */
     @Override
     public BaseResponse<AuthVo> getAuthByUserId(Long id, HttpServletRequest request) {
-        if (id <=0 || id == null ){
+        if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        // 先判断是否已登录
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User currentUser = (User) principal;
-        if (currentUser == null || currentUser.getId() == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        if (!currentUser.getId().equals(id)){
-            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
         }
         Auth auth = this.getOne(new QueryWrapper<Auth>().eq("userid", id));
         if(null == auth){
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+            throw new BusinessException(ErrorCode.AK_NOT_FOUND);
         }
         AuthVo authVo = new AuthVo();
         BeanUtils.copyProperties(auth,authVo);
@@ -64,17 +53,8 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, Auth>
      */
     @Override
     public BaseResponse updateAuthStatus(Long id, HttpServletRequest request) {
-        if (id <=0 || id == null ){
+        if (id <= 0){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-        // 先判断是否已登录
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        User currentUser = (User) principal;
-        if (currentUser == null || currentUser.getId() == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        if (!currentUser.getId().equals(id)){
-            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
         }
         boolean userid = this.update(new UpdateWrapper<Auth>().eq("userid", id).setSql("status = ! status"));
         return userid == true ? ResultUtils.success("操作成功") : ResultUtils.error(ErrorCode.OPERATION_ERROR);

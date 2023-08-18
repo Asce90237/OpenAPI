@@ -1,8 +1,8 @@
 package com.wzy.api.exception;
 
 
-import common.BaseResponse;
-import common.ErrorCode;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
 import lombok.extern.slf4j.Slf4j;

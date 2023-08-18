@@ -45,11 +45,6 @@ public class Auth implements Serializable {
     private String secretkey;
 
     /**
-     * 应用token
-     */
-    private String token;
-
-    /**
      * api的状态(0-启用，1-未启用)
      */
     private Integer status;

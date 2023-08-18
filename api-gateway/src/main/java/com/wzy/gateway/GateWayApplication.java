@@ -5,6 +5,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,7 +16,5 @@ import org.springframework.stereotype.Service;
 @EnableDubbo
 @Service
 public class GateWayApplication {
-    public static void main(String[] args) {
-        SpringApplication.run(GateWayApplication.class, args);
-    }
+    public static void main(String[] args) {SpringApplication.run(GateWayApplication.class, args);}
 }

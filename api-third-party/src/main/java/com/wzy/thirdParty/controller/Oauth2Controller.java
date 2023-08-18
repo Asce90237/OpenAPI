@@ -8,11 +8,11 @@ import cn.hutool.json.JSONUtil;
 import com.wzy.thirdParty.common.GithubLoginStateGenerator;
 import com.wzy.thirdParty.constants.OauthConstants;
 import com.wzy.thirdParty.feign.UserFeignServices;
-import common.BaseResponse;
+import common.model.BaseResponse;
 import common.Utils.CookieUtils;
 import common.constant.CookieConstant;
-import common.to.Oauth2ResTo;
-import common.vo.LoginUserVo;
+import common.model.to.Oauth2ResTo;
+import common.model.vo.LoginUserVo;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,10 +21,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.client.RestTemplate;
 
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
@@ -214,8 +212,9 @@ public class Oauth2Controller {
             return true;
         }
         Object data = baseResponse.getData();
+        // todo
         LoginUserVo loginUserVo = JSONUtil.toBean(JSONUtil.parseObj(data), LoginUserVo.class);
-        Cookie cookie = new Cookie(CookieConstant.headAuthorization,loginUserVo.getToken());
+        Cookie cookie = new Cookie(CookieConstant.headAuthorization,"");
         cookie.setPath("/");
         cookie.setMaxAge(CookieConstant.expireTime);
         CookieUtils cookieUtils = new CookieUtils();

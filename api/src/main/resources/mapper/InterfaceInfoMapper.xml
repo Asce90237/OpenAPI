@@ -88,7 +88,7 @@
         SELECT i.id,i.name, ch.charging, ch.availablePieces,i.description,i.url,i.requestParams,i.requestHeader,i.responseHeader,i.status,i.method,i.userId,i.createTime,i.updateTime,i.isDelete FROM interface_info i LEFT JOIN interface_charging ch ON i.id=ch.interfaceid
         where i.isDelete=0 and i.status=1
     </select>
-    <select id="getInterfaceList" resultType="common.vo.EchartsVo">
+    <select id="getInterfaceList" resultType="common.model.vo.EchartsVo">
         SELECT
             COUNT(*) as count ,
             DATE_FORMAT(updateTime,'%Y-%m-%d') as date

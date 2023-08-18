@@ -1,22 +1,19 @@
 package com.wzy.order.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wzy.api.provider.InnerService;
 import com.wzy.order.model.to.ApiOrderCancelDto;
 import com.wzy.order.model.to.ApiOrderDto;
 import com.wzy.order.model.to.ApiOrderStatusInfoDto;
 import com.wzy.order.model.vo.ApiOrderStatusVo;
 import com.wzy.order.service.ApiOrderService;
-import common.BaseResponse;
-import common.vo.OrderSnVo;
+import common.model.BaseResponse;
+import common.model.vo.OrderSnVo;
 import io.swagger.annotations.Api;
-import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -29,20 +26,6 @@ public class OrderController {
 
     @Autowired
     private ApiOrderService apiOrderService;
-
-    @DubboReference
-    private InnerService innerService;
-
-
-    /**
-     * 获取echarts图中最近7天的交易数
-     * @return
-     */
-    @PostMapping("/getOrderEchartsData")
-    public BaseResponse getOrderEchartsData(@RequestBody List<String> dateList){
-        return apiOrderService.getOrderEchartsData(dateList);
-    }
-
 
     /**
      * 获取全站成功交易数

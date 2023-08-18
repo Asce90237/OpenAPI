@@ -1,9 +1,9 @@
 package com.wzy.api.controller;
 
 import com.wzy.api.service.InterfaceChargingService;
-import common.BaseResponse;
-import common.to.GetAvailablePiecesTo;
-import common.vo.LockChargingVo;
+import common.model.BaseResponse;
+import common.model.to.GetAvailablePiecesTo;
+import common.model.vo.LockChargingVo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 

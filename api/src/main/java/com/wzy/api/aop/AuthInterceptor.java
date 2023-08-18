@@ -5,7 +5,7 @@ import com.wzy.api.annotation.AuthCheck;
 import common.Exception.BusinessException;
 import com.wzy.api.model.entity.User;
 import com.wzy.api.service.UserService;
-import common.ErrorCode;
+import common.model.enums.ErrorCode;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;

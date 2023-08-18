@@ -12,11 +12,13 @@ import common.constant.RedisConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -36,10 +38,10 @@ public class userAPIStatusResetSchedule {
     @Autowired
     private InterfaceInfoService interfaceInfoService;
 
-    @Autowired
-    private RedisTemplate redisTemplate;
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
-    @Autowired
+    @Resource
     private UserInterfaceInfoMapper userInterfaceInfoMapper;
 
     /**
@@ -47,7 +49,6 @@ public class userAPIStatusResetSchedule {
      */
     @Scheduled(cron = "0 0 0 * * *")
     public void resetField() {
-        long begin = System.currentTimeMillis();
         LambdaQueryWrapper<UserInterfaceInfo> lambdaQueryWrapper = new LambdaQueryWrapper<>();
         lambdaQueryWrapper.eq(UserInterfaceInfo::getStatus, 1);
         List<UserInterfaceInfo> list = userInterfaceInfoService.list(lambdaQueryWrapper);
@@ -58,8 +59,6 @@ public class userAPIStatusResetSchedule {
         userInterfaceInfos.forEach(a -> {
             userInterfaceInfoService.updateById(a);
         });
-        long end = System.currentTimeMillis();
-        log.info("更新领取状态耗时：{}",end - begin);
     }
 
     /**
@@ -67,14 +66,12 @@ public class userAPIStatusResetSchedule {
      */
     @Scheduled(cron = "0 0 0 * * *")
     public void resetIndexCache() {
-        long begin = System.currentTimeMillis();
-        // 1. 全站接口可调用数
+        // 1. 全站接口已上线数
         String cnt = String.valueOf(interfaceInfoService.count(new QueryWrapper<InterfaceInfo>().eq("isDelete",0).eq("status",1)));
-        redisTemplate.opsForValue().set(RedisConstant.API_INDEX_INTERFACE_CNT, cnt, 1, TimeUnit.DAYS);
+        stringRedisTemplate.opsForValue().set(RedisConstant.API_INDEX_INTERFACE_CNT, cnt, 1, TimeUnit.DAYS);
         // 2. 接口总调用次数
         String total = userInterfaceInfoMapper.getTotalInvokeCount();
-        redisTemplate.opsForValue().set(RedisConstant.API_INDEX_INVOKE_CNT, total, 1, TimeUnit.DAYS);
-        long end = System.currentTimeMillis();
-        log.info("更新缓存信息耗时：{}",end - begin);
+        stringRedisTemplate.opsForValue().set(RedisConstant.API_INDEX_INVOKE_CNT, total, 1, TimeUnit.DAYS);
     }
+
 }

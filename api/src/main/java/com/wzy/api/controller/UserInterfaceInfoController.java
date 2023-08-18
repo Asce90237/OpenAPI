@@ -2,11 +2,8 @@ package com.wzy.api.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.wzy.api.annotation.AuthCheck;
-import com.wzy.api.common.DeleteRequest;
+import com.wzy.api.model.dto.request.DeleteRequest;
 import com.wzy.api.constant.CommonConstant;
-import com.wzy.api.constant.UserConstant;
-import common.Exception.BusinessException;
 import com.wzy.api.model.dto.userinterfaceinfo.UserInterfaceInfoAddRequest;
 import com.wzy.api.model.dto.userinterfaceinfo.UserInterfaceInfoQueryRequest;
 import com.wzy.api.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest;
@@ -14,14 +11,15 @@ import com.wzy.api.model.entity.User;
 import com.wzy.api.model.entity.UserInterfaceInfo;
 import com.wzy.api.service.UserInterfaceInfoService;
 import com.wzy.api.service.UserService;
-import common.BaseResponse;
-import common.ErrorCode;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
+import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
-import common.to.LeftNumUpdateTo;
+import common.model.to.LeftNumUpdateTo;
+import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -44,10 +42,11 @@ public class UserInterfaceInfoController {
     @Resource
     private UserService userService;
 
-    @Resource
-    private RedisTemplate redisTemplate;
-
-    // region 增删改查
+    @ApiOperation("获取全站接口调用次数")
+    @GetMapping("/getTotalApiInvokeCnt")
+    public BaseResponse getTotalApiInvokeCnt(){
+        return userInterfaceInfoService.getTotalCnt();
+    }
 
     /**
      * 获取当前登录用户的接口剩余调用次数
@@ -77,7 +76,6 @@ public class UserInterfaceInfoController {
      * @return
      */
     @PostMapping("/add")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Long> addUserInterfaceInfo(@RequestBody UserInterfaceInfoAddRequest userInterfaceInfoAddRequest, HttpServletRequest request) {
         if (userInterfaceInfoAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -104,7 +102,6 @@ public class UserInterfaceInfoController {
      * @return
      */
     @PostMapping("/delete")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> deleteUserInterfaceInfo(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -132,7 +129,6 @@ public class UserInterfaceInfoController {
      * @return
      */
     @PostMapping("/update")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<Boolean> updateUserInterfaceInfo(@RequestBody UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest,
                                                      HttpServletRequest request) {
         if (userInterfaceInfoUpdateRequest == null || userInterfaceInfoUpdateRequest.getId() <= 0) {
@@ -164,7 +160,6 @@ public class UserInterfaceInfoController {
      * @return
      */
     @GetMapping("/get")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public BaseResponse<UserInterfaceInfo> getUserInterfaceInfoById(long id) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -179,7 +174,6 @@ public class UserInterfaceInfoController {
      * @param userInterfaceInfoQueryRequest
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     @GetMapping("/list")
     public BaseResponse<List<UserInterfaceInfo>> listUserInterfaceInfo(UserInterfaceInfoQueryRequest userInterfaceInfoQueryRequest) {
         UserInterfaceInfo userInterfaceInfoQuery = new UserInterfaceInfo();
@@ -198,7 +192,6 @@ public class UserInterfaceInfoController {
      * @param request
      * @return
      */
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     @GetMapping("/list/page")
     public BaseResponse<Page<UserInterfaceInfo>> listUserInterfaceInfoByPage(UserInterfaceInfoQueryRequest userInterfaceInfoQueryRequest, HttpServletRequest request) {
         if (userInterfaceInfoQueryRequest == null) {
@@ -220,7 +213,5 @@ public class UserInterfaceInfoController {
         Page<UserInterfaceInfo> userInterfaceInfoPage = userInterfaceInfoService.page(new Page<>(current, size), queryWrapper);
         return ResultUtils.success(userInterfaceInfoPage);
     }
-
-    // endregion
 
 }

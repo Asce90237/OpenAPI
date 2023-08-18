@@ -4,7 +4,6 @@ import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradePagePayRequest;
-import com.google.gson.Gson;
 import com.wzy.apiclient.client.ApiClient;
 import com.wzy.apiclient.model.Api;
 import com.wzy.thirdParty.common.RabbitOrderPaySuccessUtils;
@@ -12,8 +11,8 @@ import com.wzy.thirdParty.config.AliPayClientConfig;
 import com.wzy.thirdParty.model.dto.AliPayDto;
 import com.wzy.thirdParty.model.entity.AlipayInfo;
 import com.wzy.thirdParty.service.AlipayInfoService;
-import common.BaseResponse;
-import common.ErrorCode;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
 import common.constant.RedisConstant;
@@ -25,9 +24,6 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 

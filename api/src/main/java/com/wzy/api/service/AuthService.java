@@ -3,7 +3,7 @@ package com.wzy.api.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.wzy.api.model.entity.Auth;
 import com.wzy.api.model.vo.AuthVo;
-import common.BaseResponse;
+import common.model.BaseResponse;
 
 import javax.servlet.http.HttpServletRequest;
 

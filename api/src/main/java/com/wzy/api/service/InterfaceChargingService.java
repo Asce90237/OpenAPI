@@ -2,8 +2,8 @@ package com.wzy.api.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.wzy.api.model.entity.InterfaceCharging;
-import common.BaseResponse;
-import common.vo.LockChargingVo;
+import common.model.BaseResponse;
+import common.model.vo.LockChargingVo;
 
 /**
 * @author Asce

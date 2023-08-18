@@ -2,7 +2,7 @@ package com.wzy.api.controller;
 
 import com.google.gson.Gson;
 import com.wzy.api.service.MainService;
-import common.ErrorCode;
+import common.model.enums.ErrorCode;
 import common.Utils.ResultUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;

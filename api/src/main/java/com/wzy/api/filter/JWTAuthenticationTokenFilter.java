@@ -2,7 +2,7 @@ package com.wzy.api.filter;
 
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
-import com.wzy.api.common.TokenUtils;
+import com.wzy.api.utils.TokenUtils;
 import com.wzy.api.model.entity.LoginUser;
 import common.constant.CommonConstant;
 import common.constant.CookieConstant;
@@ -10,18 +10,16 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
-import org.springframework.web.filter.OncePerRequestFilter;
 
 import javax.annotation.Resource;
-import javax.servlet.FilterChain;
-import javax.servlet.ServletException;
+import javax.servlet.*;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 @Component
-public class JWTAuthenticationTokenFilter extends OncePerRequestFilter {
+public class JWTAuthenticationTokenFilter implements Filter {
 
     @Resource
     private RedisTemplate redisTemplate;
@@ -30,7 +28,9 @@ public class JWTAuthenticationTokenFilter extends OncePerRequestFilter {
     private TokenUtils tokenUtils;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        HttpServletRequest request = (HttpServletRequest) servletRequest;
+        HttpServletResponse response = (HttpServletResponse) servletResponse;
         //获取token
         Cookie[] cookies = request.getCookies();
         if (cookies == null || cookies.length == 0) {
@@ -64,7 +64,7 @@ public class JWTAuthenticationTokenFilter extends OncePerRequestFilter {
         //读缓存中的用户信息
         LoginUser user = (LoginUser) redisTemplate.opsForValue().get(CommonConstant.JWT_CACHE_PREFIX + id);
         if (user == null) {
-            throw new RuntimeException("用户未登录");
+            throw new RuntimeException("用户登录信息过期");
         }
         //存入security context
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

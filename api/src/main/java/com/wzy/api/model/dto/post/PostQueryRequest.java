@@ -1,6 +1,6 @@
 package com.wzy.api.model.dto.post;
 
-import common.PageRequest;
+import common.model.request.PageRequest;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 

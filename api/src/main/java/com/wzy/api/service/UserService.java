@@ -8,10 +8,10 @@ import com.wzy.api.model.dto.user.UserLoginBySmsRequest;
 import com.wzy.api.model.dto.user.UserQueryRequest;
 import com.wzy.api.model.dto.user.UserRegisterRequest;
 import com.wzy.api.model.entity.User;
-import common.vo.LoginUserVo;
+import common.model.vo.LoginUserVo;
 import com.wzy.api.model.vo.UserVO;
-import common.BaseResponse;
-import common.to.Oauth2ResTo;
+import common.model.BaseResponse;
+import common.model.to.Oauth2ResTo;
 
 
 import javax.servlet.http.HttpServletRequest;
@@ -152,16 +152,15 @@ public interface UserService extends IService<User> {
     BaseResponse bindPhone(UserBindPhoneRequest userBindPhoneRequest,HttpServletRequest request);
 
     /**
-     * 获取全站接口调用次数
-     * @return
-     */
-    BaseResponse getTotalCnt();
-
-
-    /**
      * 获取echarts需要展示的数据
      * @return
      */
     BaseResponse getEchartsData();
 
+    /**
+     * 注销
+     * @param response
+     * @return
+     */
+    BaseResponse logout(HttpServletResponse response);
 }

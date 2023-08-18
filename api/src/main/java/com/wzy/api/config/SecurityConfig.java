@@ -1,9 +1,8 @@
 package com.wzy.api.config;
 
-import com.wzy.api.common.SimpleAccessDeniedHandler;
-import com.wzy.api.common.SimpleAuthenticationEntryPoint;
+import com.wzy.api.utils.SimpleAccessDeniedHandler;
+import com.wzy.api.utils.SimpleAuthenticationEntryPoint;
 import com.wzy.api.filter.JWTAuthenticationTokenFilter;
-import common.constant.CookieConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -15,7 +14,6 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 /**
  * @author Asce
@@ -38,6 +36,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
     private String[] adminPath = {"/user/list/page",
             "/user/list",
+            "/user/getEchartsData",
             "/userInterfaceInfo/add",
             "/userInterfaceInfo/delete",
             "/userInterfaceInfo/update",
@@ -47,7 +46,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             "/interfaceInfo/list",
             "/interfaceInfo/list/AllPage",
             "/interfaceInfo/online",
-            "/interfaceInfo/online",};
+            "/interfaceInfo/online"
+    };
 
     @Autowired
     private SimpleAuthenticationEntryPoint simpleAuthenticationEntryPoint;
@@ -79,15 +79,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     /**
-     * 防止session 清理用户不及时
-     * @return
-     */
-    @Bean
-    HttpSessionEventPublisher httpSessionEventPublisher() {
-        return new HttpSessionEventPublisher();
-    }
-
-    /**
      * 放行静态资源
      * @param web
      * @throws Exception
@@ -107,8 +98,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 //允许跨域
-                .cors()
-                .and()
+//                .cors().and()
                 //关闭csrf
                 .csrf().disable()
                 //不通过session获取security context
@@ -127,16 +117,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http.exceptionHandling()
                 .accessDeniedHandler(simpleAccessDeniedHandler) //访问拒绝，权限不足
                 .authenticationEntryPoint(simpleAuthenticationEntryPoint); //身份未验证
-        //开启配置注销登录功能
-        http.logout()
-                .logoutUrl("/user/logout") //指定用户注销登录时请求访问的地址
-                .deleteCookies(CookieConstant.headAuthorization)//指定用户注销登录后删除的 Cookie。
-                .logoutSuccessUrl("http://localhost:88/api/user/logoutSuccess");//指定退出登录后跳转的地址
         // todo 线上需修改该地址 https://www.openapi.love/api/user/logoutSuccess
-        //每个浏览器最多同时只能登录1个用户
-        http.sessionManagement()
-                .maximumSessions(1)
-                .maxSessionsPreventsLogin(true);
-
     }
 }

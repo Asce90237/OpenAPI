@@ -37,7 +37,7 @@
             </if>
         </where>
     </select>
-    <select id="getOrderEchartsData" resultType="common.vo.EchartsVo">
+    <select id="getOrderEchartsData" resultType="common.model.vo.EchartsVo">
         SELECT
         COUNT(*) as count ,
         DATE_FORMAT(createTime,'%Y-%m-%d') as date
