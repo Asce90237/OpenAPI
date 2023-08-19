@@ -42,19 +42,18 @@ public class MainServiceImpl implements MainService {
         // 接口id可能不存在或接口已下线
         String url = map.get(String.valueOf(interfaceId));
         String key = "[" + url + "]" ;
-        // 获得的res是类名+方法名
+        // 获得的res是方法名
         String res = hashmap.get(key);
-        if(res == null){
-            return null;
+        if(res == null) {
+            throw new RuntimeException("接口不存在");
         }
-        String[] split = res.split("-");
         Object result = null;
         try {
-            //通过反射构造，获得class对象 0-类名
-            Class<?> forName = Class.forName(split[0]);
-            //由于是object对象，所以实例化对象需要从容器中拿到 1-方法名
+            //通过反射构造，获得class对象
+            Class<?> forName = Class.forName("com.wzy.api.controller.InterfaceController");
+            //由于是object对象，所以实例化对象需要从容器中拿到
             //getMethod方法第一个参数是方法名，后面是参数的类型，可以有多个
-            Method classMethod = forName.getMethod(split[1], Object.class);
+            Method classMethod = forName.getMethod(res, Object.class);
             //调用方法 invoke方法第一个参数是实例对象，后面是参数，可以有多个，调用方法得到的是object类型
             result = classMethod.invoke(context.getBean(forName), api.getParameter());
         } catch (Exception e) {

@@ -16,16 +16,11 @@
  */
 package common.dubbo;
 
-import common.Utils.ResultUtils;
 import common.model.BaseResponse;
 import common.model.entity.Auth;
-import common.model.to.GetAvailablePiecesTo;
 import common.model.to.LeftNumUpdateTo;
 import common.model.to.Oauth2ResTo;
 import common.model.vo.LockChargingVo;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 public interface ApiInnerService {
 
