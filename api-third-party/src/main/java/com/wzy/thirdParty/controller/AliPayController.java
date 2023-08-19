@@ -43,20 +43,6 @@ public class AliPayController {
     @Autowired
     private RabbitOrderPaySuccessUtils rabbitOrderPaySuccessUtils;
 
-    @Value("${api.client.access-key}")
-    private String accessKey;
-
-    @Value("${api.client.secret-key}")
-    private String secretKey;
-
-    @PostMapping("/y")
-    @ResponseBody
-    public com.wzy.apiclient.common.BaseResponse getY(@RequestBody Api api) {
-        ApiClient apiClient = new ApiClient(accessKey,secretKey);
-        com.wzy.apiclient.common.BaseResponse result = apiClient.getResult(api);
-        return result;
-    }
-
     /**
      * 调用支付请求
      * @param aliPay
@@ -95,7 +81,7 @@ public class AliPayController {
      * @throws Exception
      */
     @PostMapping ("/notify")
-    @ResponseBody // 注意这里必须是POST接口，todo 修改返回值
+    @ResponseBody // 注意这里必须是POST接口
     public synchronized String payNotify(HttpServletRequest request) throws Exception {
         if (request.getParameter("trade_status").equals("TRADE_SUCCESS")) {
             Map<String, String> params = new HashMap<>();

@@ -1,5 +1,6 @@
-package com.wzy.api.model.entity;
+package com.wzy.order.model.entity;
 
+import common.model.entity.User;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;

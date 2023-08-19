@@ -127,15 +127,6 @@ public interface UserService extends IService<User> {
     BaseResponse updateUserPass(String password, HttpServletRequest request);
 
     /**
-     * 通过第三方Gitee登录
-     * @param oauth2ResTo
-     * @param type
-     * @param httpServletResponse
-     * @return
-     */
-    BaseResponse oauth2Login(Oauth2ResTo oauth2ResTo, String type, HttpServletResponse httpServletResponse);
-
-    /**
      * 检查用户当前登录状态
      * @param request
      * @param response

@@ -7,11 +7,13 @@ import cn.hutool.core.util.DesensitizedUtil;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.plugins.pagination.PageDTO;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.Gson;
 import com.wzy.api.utils.*;
 import com.wzy.api.mapper.AuthMapper;
 import com.wzy.api.mapper.InterfaceInfoMapper;
@@ -46,6 +48,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -82,6 +85,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @DubboReference
     private OrderInnerService orderInnerService;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Resource
     private UserMapper userMapper;
@@ -371,9 +377,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      */
     @Override
     public BaseResponse loginBySms(UserLoginBySmsRequest loginBySms, HttpServletResponse response) {
+        if (loginBySms == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
         String mobile = loginBySms.getMobile();
         String code = loginBySms.getCode();
-        if ( null == mobile || null == code){
+        if (null == mobile || null == code) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         //验证手机号的合法性
@@ -386,10 +395,18 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!verify){
             throw new BusinessException(ErrorCode.SMS_CODE_ERROR);
         }
-        //验证该手机号是否完成注册 todo
+        //验证该手机号是否完成注册
         //若没有，会自动抛出异常;若有，隐藏手机号，并返回User对象
-        LoginUser user = (LoginUser) userDetailsService.loadUserByUsername(mobile);
-        LoginUserVo loginUserVo = initUserLogin(user,response);
+        LambdaQueryWrapper<User> lambdaQueryWrapper = new LambdaQueryWrapper<>();
+        lambdaQueryWrapper.eq(User::getMobile, mobile);
+        User user = this.getOne(lambdaQueryWrapper);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "该手机号还未注册，请先注册");
+        }
+        List<String> permissions = new ArrayList<>();
+        permissions.add("ROLE_" + user.getUserRole());
+        LoginUser loginUser = new LoginUser(user, permissions);
+        LoginUserVo loginUserVo = initUserLogin(loginUser,response);
         return ResultUtils.success(loginUserVo);
     }
 
@@ -453,8 +470,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR,"未注册");
         }
         //手机号签名时长为10分钟
-        long expiryTime = System.currentTimeMillis() + 1000L * (long) 600;
-        String signature =null;
+        String signature = null;
         try {
             // 将手机号进行加密后，存入redis
             signature = mobileSignature.makeMobileSignature(username);
@@ -575,39 +591,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     /**
-     * 通过第三方登录
-     * @param oauth2ResTo
-     * @param type
-     * @param httpServletResponse
-     * @return
-     */
-    @Transactional
-    @Override
-    public BaseResponse oauth2Login(Oauth2ResTo oauth2ResTo, String type, HttpServletResponse httpServletResponse) {
-        String accessToken = oauth2ResTo.getAccess_token();
-        if (null == accessToken){
-            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
-        }
-        //拿到用户的信息
-        LoginUserVo loginUserVo =null;
-        if ("gitee".equals(type)){
-            //6.访问用户信息
-            HttpResponse response = HttpRequest.get("https://gitee.com/api/v5/user?access_token=" + accessToken).execute();
-            loginUserVo = oauth2LoginUtils.giteeOrGithubOauth2Login(response);
-        }else {
-            //您可以像以下这样在 curl 中设置“授权”标头：
-            //curl -H "Authorization: Bearer OAUTH-TOKEN" https://api.github.com/user
-            HttpResponse userInfo = HttpRequest.get("https://api.github.com/user")
-                    .header("Authorization","Bearer "+accessToken)
-                    .timeout(30000)
-                    //超时，毫秒
-                    .execute();
-            loginUserVo = oauth2LoginUtils.giteeOrGithubOauth2Login(userInfo);
-        }
-        return ResultUtils.success(loginUserVo);
-    }
-
-    /**
      * 检查用户登录状态
      * @param request
      * @param response
@@ -642,7 +625,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String picCaptcha = (String) redisTemplate.opsForValue().get(CAPTCHA_PREFIX + signature);
         AuthPhoneNumber authPhoneNumber = new AuthPhoneNumber();
         //验证图形验证码是否正确
-        if (null == picCaptcha || authPhoneNumber.isCaptcha(captcha) || !captcha.equals(picCaptcha)){
+        if (authPhoneNumber.isCaptcha(captcha) || !captcha.equals(picCaptcha)){
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"图形验证码错误或已经过期，请重新刷新验证码");
         }
         //验证手机号是否正确
@@ -669,10 +652,12 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String phone = DesensitizedUtil.mobilePhone(mobile);
         //更新全局对象中的用户信息
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        User currentUser =(User) authentication.getPrincipal();
-        currentUser.setMobile(phone);
-        UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(currentUser, null, null);
-        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        LoginUser loginUser = (LoginUser) authentication.getPrincipal();
+        User user = loginUser.getUser();
+        user.setMobile(phone);
+        Gson gson = new Gson();
+        String json = gson.toJson(loginUser);
+        stringRedisTemplate.opsForValue().set(CommonConstant.JWT_CACHE_PREFIX + user.getId(), json, 1, TimeUnit.DAYS);
         return ResultUtils.success(phone);
     }
 
@@ -748,7 +733,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     /**
      * headAuthorization Cookie 是用于存储用户的认证信息，具体包括用户的 Token，用于后续的身份认证和授权。
-     * 该 Cookie 的作用是在客户端浏览器中存储用户的认证信息，以便用户在后续的请求中可以携带该认证信息，进行身份认证和授权。
      *
      */
     private LoginUserVo initUserLogin(LoginUser loginUser,HttpServletResponse response) {
@@ -761,7 +745,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         //不设置过期时间，这样cookie就是会话级别的，关闭浏览器就会消失
 //        cookie.setMaxAge(CookieConstant.expireTime);
         response.addCookie(cookie);
-        redisTemplate.opsForValue().set(CommonConstant.JWT_CACHE_PREFIX + loginUser.getUser().getId(), loginUser, 1, TimeUnit.HOURS);
+        Gson gson = new Gson();
+        String json = gson.toJson(loginUser);
+        stringRedisTemplate.opsForValue().set(CommonConstant.JWT_CACHE_PREFIX + loginUser.getUser().getId(), json, 1, TimeUnit.HOURS);
         return loginUserVo;
     }
 

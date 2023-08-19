@@ -15,7 +15,7 @@ import java.security.NoSuchAlgorithmException;
 @Component
 public class MobileSignature {
 
-    private static final byte[] key = "OpenAPI.Asce".getBytes();
+    private static final byte[] key = "ApiPhoneSign-Ygx".getBytes();
 
     /**
      * 生成手机号签名
@@ -24,7 +24,7 @@ public class MobileSignature {
      * @throws NoSuchAlgorithmException
      */
     public String makeMobileSignature(String username) throws NoSuchAlgorithmException {
-        String data = username + ":" + "OpenAPISign";
+        String data = username + ":" + "ApiPhoneSign";
         MessageDigest digest;
         digest = MessageDigest.getInstance("MD5");
         return new String(Hex.encode(digest.digest(data.getBytes())));

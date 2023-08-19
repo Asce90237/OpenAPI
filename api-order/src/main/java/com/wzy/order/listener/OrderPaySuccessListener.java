@@ -2,18 +2,19 @@ package com.wzy.order.listener;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.rabbitmq.client.Channel;
-import com.wzy.order.feign.UserFeignServices;
 import com.wzy.order.model.entity.ApiOrder;
 import com.wzy.order.model.entity.ApiOrderLock;
 import com.wzy.order.service.ApiOrderLockService;
 import com.wzy.order.service.ApiOrderService;
-import common.model.BaseResponse;
-import common.model.enums.ErrorCode;
 import common.Exception.BusinessException;
 import common.constant.RabbitMqConstant;
 import common.constant.RedisConstant;
+import common.dubbo.ApiInnerService;
+import common.model.BaseResponse;
+import common.model.enums.ErrorCode;
 import common.model.to.LeftNumUpdateTo;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,14 +33,14 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class OrderPaySuccessListener {
 
+    @DubboReference
+    private ApiInnerService apiInnerService;
+
     @Autowired
     private ApiOrderLockService apiOrderLockService;
 
     @Autowired
     private ApiOrderService apiOrderService;
-
-    @Autowired
-    private UserFeignServices userFeignServices;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -72,7 +73,7 @@ public class OrderPaySuccessListener {
                 leftNumUpdateTo.setUserId(userId);
                 leftNumUpdateTo.setInterfaceInfoId(interfaceId);
                 //远程调用，增加剩余用户剩余调用次数
-                BaseResponse baseResponse = userFeignServices.updateUserLeftNum(leftNumUpdateTo);
+                BaseResponse baseResponse = apiInnerService.updateUserLeftNum(leftNumUpdateTo);
                 String result = baseResponse.getData().toString();
                 if (!"true".equals(result)){
                     throw new BusinessException(ErrorCode.OPERATION_ERROR);

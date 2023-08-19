@@ -13,7 +13,6 @@ import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.wzy.order.common.RabbitOrderUtils;
-import com.wzy.order.feign.UserFeignServices;
 import com.wzy.order.mapper.ApiOrderMapper;
 import com.wzy.order.model.entity.ApiOrder;
 import com.wzy.order.model.entity.ApiOrderLock;
@@ -23,19 +22,20 @@ import com.wzy.order.model.to.ApiOrderStatusInfoDto;
 import com.wzy.order.model.vo.ApiOrderStatusVo;
 import com.wzy.order.service.ApiOrderLockService;
 import com.wzy.order.service.ApiOrderService;
-import common.model.BaseResponse;
-import common.model.enums.ErrorCode;
 import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
 import common.constant.CookieConstant;
 import common.constant.OrderConstant;
 import common.constant.RedisConstant;
+import common.dubbo.ApiInnerService;
+import common.model.BaseResponse;
 import common.model.entity.InterfaceInfo;
-import common.model.to.GetAvailablePiecesTo;
+import common.model.enums.ErrorCode;
 import common.model.vo.LockChargingVo;
-import common.model.vo.LoginUserVo;
 import common.model.vo.OrderInterfaceInfoVo;
 import common.model.vo.OrderSnVo;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -70,8 +70,8 @@ import java.util.stream.Collectors;
 public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     implements ApiOrderService {
 
-    @Autowired
-    private UserFeignServices userFeignServices;
+    @DubboReference
+    private ApiInnerService apiInnerService;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -101,24 +101,16 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     @Transactional(rollbackFor = Exception.class)
     @Override
     public BaseResponse<OrderSnVo> generateOrderSn(@RequestBody ApiOrderDto apiOrderDto, HttpServletRequest request, HttpServletResponse response) throws ExecutionException, InterruptedException {
-        //1、远程获取当前登录用户 todo 修改
-        BaseResponse baseResponse = userFeignServices.checkUserLogin();
-        LoginUserVo loginUserVo = JSONUtil.toBean(JSONUtil.parseObj(baseResponse.getData()), LoginUserVo.class);
-        if (null == loginUserVo){
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
         //2、健壮性校验
         Long userId = apiOrderDto.getUserId();
         Double totalAmount = apiOrderDto.getTotalAmount();
         Long orderNum = apiOrderDto.getOrderNum();
         Double charging = apiOrderDto.getCharging();
         Long interfaceId = apiOrderDto.getInterfaceId();
-        if (null == userId || null==totalAmount || null == orderNum || null ==charging || null==interfaceId){
+        if (StringUtils.isAnyBlank(String.valueOf(userId),
+                String.valueOf(totalAmount), String.valueOf(orderNum),
+                String.valueOf(charging), String.valueOf(interfaceId))) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
-        }
-
-        if (!userId.equals(loginUserVo.getId())){
-            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
         }
         //保留两位小数
         Double temp = orderNum * charging;
@@ -137,17 +129,13 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         }
         String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";
         Long result = (Long) redisTemplate.execute(new DefaultRedisScript<Long>(script, Long.class),
-                Arrays.asList(OrderConstant.USER_ORDER_TOKEN_PREFIX + loginUserVo.getId()),
+                Arrays.asList(OrderConstant.USER_ORDER_TOKEN_PREFIX + userId),
                 token);
         if (result == 0L){
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"提交太快了，请重新提交");
         }
         //4、远程查询是否还有库存、远程异步调用查询接口信息
-        GetAvailablePiecesTo getAvailablePiecesTo = new GetAvailablePiecesTo();
-        getAvailablePiecesTo.setInterfaceId(interfaceId);
-        BaseResponse presentAvailablePieces = userFeignServices.getPresentAvailablePieces(getAvailablePiecesTo);
-        // 查看剩余库存
-        String availablePiecesData = (String) presentAvailablePieces.getData();
+        String availablePiecesData = apiInnerService.getPresentAvailablePieces(interfaceId);
         if (Integer.parseInt(availablePiecesData) < orderNum){
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"库存不足，请刷新页面,当前剩余库存为："+availablePiecesData);
         }
@@ -159,7 +147,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         CompletableFuture<Void> voidCompletableFuture = CompletableFuture.runAsync(() -> {
             //异步查询
             RequestContextHolder.setRequestAttributes(requestAttributes);
-            BaseResponse orderInterfaceInfo = userFeignServices.getOrderInterfaceInfo(getAvailablePiecesTo);
+            BaseResponse orderInterfaceInfo = apiInnerService.getOrderInterfaceInfo(interfaceId);
             JSONObject entries = JSONUtil.parseObj(orderInterfaceInfo.getData());
             InterfaceInfo interfaceInfo = JSONUtil.toBean(entries, InterfaceInfo.class);
             orderInterfaceInfoVo.setName(interfaceInfo.getName());
@@ -167,7 +155,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         }, executor);
 
         //5、使用雪花算法生成订单id，并保存订单
-        String orderSn = generateOrderSn(loginUserVo.getId().toString());
+        String orderSn = generateOrderSn(String.valueOf(userId));
         ApiOrder apiOrder = new ApiOrder();
         apiOrder.setTotalAmount(totalAmount);
         apiOrder.setOrderSn(orderSn);
@@ -195,7 +183,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         LockChargingVo lockChargingVo = new LockChargingVo();
         lockChargingVo.setOrderNum(orderNum);
         lockChargingVo.setInterfaceid(interfaceId);
-        BaseResponse updateAvailablePieces = userFeignServices.updateAvailablePieces(lockChargingVo);
+        BaseResponse updateAvailablePieces = apiInnerService.updateAvailablePieces(lockChargingVo);
         if (updateAvailablePieces.getCode() != 0) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"库存更新失败");
         }
@@ -259,7 +247,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         LockChargingVo lockChargingVo = new LockChargingVo();
         lockChargingVo.setOrderNum(orderNum);
         lockChargingVo.setInterfaceid(apiOrderCancelDto.getInterfaceId());
-        BaseResponse res = userFeignServices.unlockAvailablePieces(lockChargingVo);
+        BaseResponse res = apiInnerService.unlockAvailablePieces(lockChargingVo);
         if (res.getCode() != 0){
             throw new RuntimeException();
         }

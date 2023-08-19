@@ -1,32 +1,34 @@
 package com.wzy.thirdParty.controller;
 
 
-import cn.hutool.core.lang.UUID;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONUtil;
-import com.wzy.thirdParty.common.GithubLoginStateGenerator;
-import com.wzy.thirdParty.constants.OauthConstants;
-import com.wzy.thirdParty.feign.UserFeignServices;
-import common.model.BaseResponse;
-import common.Utils.CookieUtils;
+import com.google.gson.Gson;
+import com.wzy.thirdParty.model.entity.LoginUser;
+import com.wzy.thirdParty.utils.TokenUtils;
+import common.constant.CommonConstant;
 import common.constant.CookieConstant;
+import common.dubbo.ApiInnerService;
+import common.model.BaseResponse;
+import common.model.entity.User;
 import common.model.to.Oauth2ResTo;
 import common.model.vo.LoginUserVo;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.concurrent.TimeUnit;
 
 
@@ -58,74 +60,46 @@ public class Oauth2Controller {
     @Value("${github.redirect_uri}")
     private String github_redirect_uri;
 
-    @Autowired
-    private UserFeignServices userFeignServices;
+    @DubboReference(timeout = 10000) // dubbo 远程调用超时
+    private ApiInnerService apiInnerService;
 
     @Autowired
-    private RedisTemplate redisTemplate;
+    private TokenUtils tokenUtils;
 
-    //error=access_denied&error_description=用户或服务器拒绝了请求
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
+
     @GetMapping(value =  "/gitee",params = "error=access_denied")
-    public String handleAccessDeniedGitee(HttpServletResponse res) throws IOException {
-        PrintWriter writer = res.getWriter();
-        writer.println("<script>alert('用户拒绝授权')</script>");
-        return  redirect_uri;
+    public String handleAccessDeniedGitee() {
+        return redirect_uri;
     }
 
     @GetMapping("/handleGiteeState")
-    public String handleGiteeState(HttpSession session) {
-        String key = (String) session.getAttribute(OauthConstants.GITEE_SESSION_KEY);
-        if (key == null) {
-            key = OauthConstants.GITEE_LOGIN_PREFIX + UUID.randomUUID().toString();
-            session.setAttribute(OauthConstants.GITEE_SESSION_KEY,key);
-        }
-        String state = (String) redisTemplate.opsForValue().get(key);
-        if (state == null) {
-            //生成随机state，防跨域攻击
-            GithubLoginStateGenerator generator = new GithubLoginStateGenerator();
-            state = generator.generate();
-            redisTemplate.opsForValue().set(key, state, 10, TimeUnit.MINUTES);
-        }
-        String url = "https://gitee.com/oauth/authorize?client_id="+gitee_client_id+"&redirect_uri="+gitee_redirect_uri+"&response_type=code"+"&state=" + state;
+    public String handleGiteeState() {
+        String url = "https://gitee.com/oauth/authorize?client_id="+gitee_client_id+"&redirect_uri="+gitee_redirect_uri+"&response_type=code";
         return "redirect:" + url;
     }
 
     @GetMapping("/gitee")
-    public String gitee(@RequestParam("code") String code, @RequestParam("state") String state, HttpServletResponse res, HttpSession session) throws IOException {
-        // 从session中获取缓存key
-        String key = (String) session.getAttribute(OauthConstants.GITEE_SESSION_KEY);
-        if (key == null || "".equals(key)) {
-            return redirect_uri;
-        }
-        // 从Redis中获取state值
-        String redisState = (String) redisTemplate.opsForValue().get(key);
-        if (redisState == null || !redisState.equals(state)) {
-            //为空代表过期
-            // Redis中的state和回调中的state不匹配，说明可能存在CSRF攻击或其他安全问题，需要进行处理
-            // 这里可以跳转到一个错误页面或返回一个错误信息
-            return redirect_uri;
-        }
-        redisTemplate.delete(key);
+    public String gitee(@RequestParam("code") String code, HttpServletResponse res) {
         //4.接收授权码
         String url = "https://gitee.com/oauth/token?grant_type=authorization_code&code=" + code +
                 "&client_id=" + gitee_client_id +
                 "&redirect_uri=" + gitee_redirect_uri +
                 "&client_secret=" + gitee_client_secret;
-        HttpResponse response =null;
+        HttpResponse response = null;
         try {
             //5.获取访问令牌
             response = HttpRequest.post(url)
                     .timeout(20000)//超时，毫秒
                     .execute();
         }catch (Exception e){
-            PrintWriter writer = res.getWriter();
-            writer.println("<script>alert('请求超时，请重试')</script>");
             return  redirect_uri;
         }
         if (response.getStatus() == 200){
             //5.获取访问令牌
             Oauth2ResTo oauth2ResTo = JSONUtil.toBean(response.body(), Oauth2ResTo.class);
-            BaseResponse baseResponse = userFeignServices.oauth2Login(oauth2ResTo,"gitee");
+            BaseResponse baseResponse = apiInnerService.oauth2Login(oauth2ResTo,"gitee");
             //拿到token，远程调用查询用户是否注册、未注册的自动进行注册，已经完成注册的，则进行登录
             if (cookieResUtils(res, baseResponse)) return redirect_uri;
         }
@@ -133,49 +107,19 @@ public class Oauth2Controller {
     }
 
     @GetMapping("/handleGithubState")
-    public String handleGithubState(HttpSession session) {
-        String key = (String) session.getAttribute(OauthConstants.GITHUB_SESSION_KEY);
-        if (key == null) {
-            key = OauthConstants.GITHUB_LOGIN_PREFIX + UUID.randomUUID().toString();
-            session.setAttribute(OauthConstants.GITHUB_SESSION_KEY,key);
-        }
-        String state = (String) redisTemplate.opsForValue().get(key);
-        if (state == null) {
-            //生成随机state，防跨域攻击
-            GithubLoginStateGenerator generator = new GithubLoginStateGenerator();
-            state = generator.generate();
-            redisTemplate.opsForValue().set(key, state, 10, TimeUnit.MINUTES);
-        }
-        String url = "https://github.com/login/oauth/authorize?client_id="+github_client_id+"&redirect_uri="+github_redirect_uri+"&state=" + state;
+    public String handleGithubState() {
+        String url = "https://github.com/login/oauth/authorize?client_id="+github_client_id+"&redirect_uri="+github_redirect_uri;
         return "redirect:" + url;
     }
 
-    //http://localhost:88/api/oauth/github?error=access_denied&error_description=The+user+has+denied+your+application+access.
+    //oauth/github?error=access_denied&error_description=The+user+has+denied+your+application+access.
     @GetMapping(value =  "/github",params = "error=access_denied")
-    public String handleAccessDeniedGithub(HttpServletResponse res) throws IOException {
-        PrintWriter writer = res.getWriter();
-        writer.println("<script>alert('用户拒绝授权')</script>");
-        return  redirect_uri;
+    public String handleAccessDeniedGithub() throws IOException {
+        return redirect_uri;
     }
 
-    //如果用户接受你的请求，GitHub 会使用代码参数中的临时 code 以及你在上一步的 state 参数中提供的状态重定向回你的站点。
-    // 临时代码将在 10 分钟后到期。 如果状态不匹配，然后第三方创建了请求，您应该中止此过程。
     @GetMapping("/github")
-    public String github(@RequestParam("code") String code,@RequestParam("state") String state, HttpServletResponse res, HttpSession session) throws IOException {
-        // 从session中获取缓存key
-        String key = (String) session.getAttribute(OauthConstants.GITHUB_SESSION_KEY);
-        if (key == null || "".equals(key)) {
-            return redirect_uri;
-        }
-        // 从Redis中获取state值
-        String redisState = (String) redisTemplate.opsForValue().get(key);
-        if (redisState == null || !redisState.equals(state)) {
-            //为空代表过期
-            // Redis中的state和回调中的state不匹配，说明可能存在CSRF攻击或其他安全问题，需要进行处理
-            // 这里可以跳转到一个错误页面或返回一个错误信息
-            return redirect_uri;
-        }
-        redisTemplate.delete(key);
+    public String github(@RequestParam("code") String code, HttpServletResponse res) {
         String url = "https://github.com/login/oauth/access_token?client_id=" + github_client_id +
                 "&client_secret=" + github_client_secret +
                 "&code=" + code;
@@ -185,9 +129,7 @@ public class Oauth2Controller {
                     .timeout(30000)//超时，毫秒
                     .execute();
         }catch (Exception e){
-            PrintWriter writer = res.getWriter();
-            writer.println("<script>alert('请求超时，请重试')</script>");
-            return  redirect_uri;
+            return redirect_uri;
         }
         if (response.getStatus() == 200){
             //access_token=gho_16C7e42F292c6912E7710c838347Ae178B4a&scope=repo%2Cgist&token_type=bearer
@@ -198,32 +140,30 @@ public class Oauth2Controller {
             String token = split1[1];
             Oauth2ResTo oauth2ResTo = new Oauth2ResTo();
             oauth2ResTo.setAccess_token(token);
-            BaseResponse baseResponse = userFeignServices.oauth2Login(oauth2ResTo,"github");
+            BaseResponse baseResponse = apiInnerService.oauth2Login(oauth2ResTo,"github");
             //拿到token，远程调用查询用户是否注册、未注册的自动进行注册，已经完成注册的，则进行登录
             if (cookieResUtils(res, baseResponse)) return redirect_uri;
         }
         return redirect_uri;
     }
 
-    private boolean cookieResUtils(HttpServletResponse res, @NotNull BaseResponse baseResponse) throws IOException {
+    private boolean cookieResUtils(HttpServletResponse res, @NotNull BaseResponse baseResponse) {
         if (baseResponse.getCode() != 0){
-            PrintWriter writer = res.getWriter();
-            writer.println("<script>alert('登录失败')</script>");
             return true;
         }
         Object data = baseResponse.getData();
-        // todo
-        LoginUserVo loginUserVo = JSONUtil.toBean(JSONUtil.parseObj(data), LoginUserVo.class);
-        Cookie cookie = new Cookie(CookieConstant.headAuthorization,"");
+        LoginUser loginUser = JSONUtil.toBean(JSONUtil.parseObj(data), LoginUser.class);
+        //token载荷信息包括用户id
+        User user = loginUser.getUser();
+        String token = tokenUtils.generateToken(String.valueOf(user.getId()));
+        Cookie cookie = new Cookie(CookieConstant.headAuthorization,token);
         cookie.setPath("/");
-        cookie.setMaxAge(CookieConstant.expireTime);
-        CookieUtils cookieUtils = new CookieUtils();
-        String autoLoginContent = cookieUtils.generateAutoLoginContent(loginUserVo.getId().toString(), loginUserVo.getUserAccount());
-        Cookie cookie1 = new Cookie(CookieConstant.autoLoginAuthCheck, autoLoginContent);
-        cookie1.setPath("/");
-        cookie.setMaxAge(CookieConstant.expireTime);
+        //不设置过期时间，这样cookie就是会话级别的，关闭浏览器就会消失
+//        cookie.setMaxAge(CookieConstant.expireTime);
         res.addCookie(cookie);
-        res.addCookie(cookie1);
+        Gson gson = new Gson();
+        String json = gson.toJson(loginUser);
+        stringRedisTemplate.opsForValue().set(CommonConstant.JWT_CACHE_PREFIX + loginUser.getUser().getId(), json, 1, TimeUnit.HOURS);
         return false;
     }
 }

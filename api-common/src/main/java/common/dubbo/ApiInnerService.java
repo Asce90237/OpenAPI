@@ -16,8 +16,16 @@
  */
 package common.dubbo;
 
+import common.Utils.ResultUtils;
 import common.model.BaseResponse;
 import common.model.entity.Auth;
+import common.model.to.GetAvailablePiecesTo;
+import common.model.to.LeftNumUpdateTo;
+import common.model.to.Oauth2ResTo;
+import common.model.vo.LockChargingVo;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public interface ApiInnerService {
 
@@ -55,5 +63,49 @@ public interface ApiInnerService {
      * 判断参数是否可以为空
      */
     boolean paramsIsValid(long interfaceInfoId);
+
+    /**
+     * 获取当前接口的剩余库存
+     * @param interfaceInfoId
+     * @return
+     */
+    String getPresentAvailablePieces(long interfaceInfoId);
+
+    /**
+     * 远程获取接口信息
+     * @param interfaceInfoId
+     * @return
+     */
+    BaseResponse getOrderInterfaceInfo(long interfaceInfoId);
+
+    /**
+     * 更新库存
+     * @param lockChargingVo
+     * @return
+     */
+    BaseResponse updateAvailablePieces(LockChargingVo lockChargingVo);
+
+    /**
+     * 远程解锁库存
+     * @param lockChargingVo
+     * @return
+     */
+    BaseResponse unlockAvailablePieces(LockChargingVo lockChargingVo);
+
+
+    /**
+     * 更新用户剩余可调用次数
+     * @param leftNumUpdateTo
+     * @return
+     */
+    BaseResponse updateUserLeftNum(LeftNumUpdateTo leftNumUpdateTo);
+
+    /**
+     * 第三方登录
+     * @param oauth2ResTo
+     * @param type
+     * @return
+     */
+    BaseResponse oauth2Login(Oauth2ResTo oauth2ResTo, String type);
 
 }

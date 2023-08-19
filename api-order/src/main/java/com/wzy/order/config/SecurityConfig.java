@@ -1,8 +1,8 @@
-package com.wzy.api.config;
+package com.wzy.order.config;
 
-import com.wzy.api.filter.JWTAuthenticationTokenFilter;
-import com.wzy.api.utils.SimpleAccessDeniedHandler;
-import com.wzy.api.utils.SimpleAuthenticationEntryPoint;
+import com.wzy.order.filter.JWTAuthenticationTokenFilter;
+import com.wzy.order.utils.SimpleAccessDeniedHandler;
+import com.wzy.order.utils.SimpleAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -19,34 +19,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  * @author Asce
  */
 @Configuration
+//@EnableGlobalMethodSecurity(prePostEnabled = true) 使用注解验证权限
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
-    private String[] pathPatterns = {
-            "/user/register",
-            "/user/login",
-            "/user/loginBySms",
-            "/v3/api-docs",
-            "/user/logoutSuccess",
-            "/user/getpassusertype",
-            "/user/sendPassUserCode",
-            "/user/authPassUserCode",
-            "/user/updateUserPass"
-    };
-
-    private String[] adminPath = {"/user/list/page",
-            "/user/list",
-            "/user/getEchartsData",
-            "/userInterfaceInfo/add",
-            "/userInterfaceInfo/delete",
-            "/userInterfaceInfo/update",
-            "/userInterfaceInfo/get",
-            "/userInterfaceInfo/list",
-            "/userInterfaceInfo/list/page",
-            "/interfaceInfo/list",
-            "/interfaceInfo/list/AllPage",
-            "/interfaceInfo/online",
-            "/interfaceInfo/online"
-    };
 
     @Autowired
     private SimpleAuthenticationEntryPoint simpleAuthenticationEntryPoint;
@@ -104,11 +78,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
-                // 管理员才可访问的接口
-                .antMatchers(adminPath).hasRole("admin") //需要加上ROLE_
                 // 对于登录接口 允许匿名访问.anonymous()，即未登陆时可以访问，登陆后携带了token就不能再访问了
-                .antMatchers(pathPatterns).anonymous()
-                .antMatchers("/user/getCaptcha","/user/captcha").permitAll()
                 // 除上面外的所有请求全部需要鉴权认证,.authenticated()表示认证之后可以访问
                 .anyRequest().authenticated();
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);

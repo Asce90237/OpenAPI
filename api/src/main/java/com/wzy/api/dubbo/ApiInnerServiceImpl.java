@@ -17,22 +17,39 @@
 package com.wzy.api.dubbo;
 
 
+import cn.hutool.http.HttpRequest;
+import cn.hutool.http.HttpResponse;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.wzy.api.constant.CommonConstant;
 import com.wzy.api.mapper.AuthMapper;
+import com.wzy.api.mapper.InterfaceChargingMapper;
+import com.wzy.api.model.entity.InterfaceCharging;
 import com.wzy.api.model.entity.InterfaceInfo;
+import com.wzy.api.model.entity.LoginUser;
 import com.wzy.api.model.entity.UserInterfaceInfo;
+import com.wzy.api.service.InterfaceChargingService;
 import com.wzy.api.service.InterfaceInfoService;
 import com.wzy.api.service.UserInterfaceInfoService;
-import common.model.enums.ErrorCode;
+import com.wzy.api.utils.Oauth2LoginUtils;
+import com.wzy.api.utils.RedisTemplateUtils;
 import common.Exception.BusinessException;
+import common.Utils.ResultUtils;
 import common.dubbo.ApiInnerService;
+import common.model.BaseResponse;
 import common.model.entity.Auth;
+import common.model.enums.ErrorCode;
+import common.model.to.LeftNumUpdateTo;
+import common.model.to.Oauth2ResTo;
+import common.model.vo.LockChargingVo;
+import common.model.vo.LoginUserVo;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author Asce
@@ -43,12 +60,23 @@ public class ApiInnerServiceImpl implements ApiInnerService {
     @Resource
     private UserInterfaceInfoService userInterfaceInfoService;
 
+    @Resource
+    private RedisTemplateUtils redisTemplateUtils;
 
     @Resource
     private InterfaceInfoService interfaceInfoService;
 
     @Resource
     private AuthMapper authMapper;
+
+    @Resource
+    private InterfaceChargingMapper interfaceChargingMapper;
+
+    @Resource
+    private InterfaceChargingService interfaceChargingService;
+
+    @Autowired
+    private Oauth2LoginUtils oauth2LoginUtils;
 
     @Override
     public Auth getAuthByAk(String accessKey) {
@@ -96,6 +124,11 @@ public class ApiInnerServiceImpl implements ApiInnerService {
         return one != null;
     }
 
+    /**
+     * 判断接口是否有效
+     * @param interfaceInfoId
+     * @return
+     */
     @Override
     public boolean apiIdIsValid(long interfaceInfoId) {
         LambdaQueryWrapper<com.wzy.api.model.entity.InterfaceInfo> queryWrapper = new LambdaQueryWrapper<>();
@@ -105,6 +138,9 @@ public class ApiInnerServiceImpl implements ApiInnerService {
         return one != null;
     }
 
+    /**
+     * 判断参数是否可以为空
+     */
     @Override
     public boolean paramsIsValid(long interfaceInfoId) {
         LambdaQueryWrapper<com.wzy.api.model.entity.InterfaceInfo> queryWrapper = new LambdaQueryWrapper<>();
@@ -112,5 +148,98 @@ public class ApiInnerServiceImpl implements ApiInnerService {
         queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getStatus, 1);
         InterfaceInfo one = interfaceInfoService.getOne(queryWrapper);
         return one.getRequestParams().equals(CommonConstant.INTERFACE_PARAM_STATUS);
+    }
+
+    /**
+     * 获取当前接口的剩余库存
+     * @param interfaceInfoId
+     * @return
+     */
+    @Override
+    public String getPresentAvailablePieces(long interfaceInfoId) {
+        String availablePieces = interfaceChargingMapper.getPresentAvailablePieces(interfaceInfoId);
+        return availablePieces;
+    }
+
+    /**
+     * 远程获取接口信息
+     * @param interfaceInfoId
+     * @return
+     */
+    @Override
+    public BaseResponse getOrderInterfaceInfo(long interfaceInfoId) {
+        return ResultUtils.success(interfaceInfoService.getById(interfaceInfoId));
+    }
+
+    /**
+     * 更新库存
+     * @param lockChargingVo
+     * @return
+     */
+    @Override
+    @Transactional
+    public BaseResponse updateAvailablePieces(LockChargingVo lockChargingVo) {
+        return interfaceChargingService.updateAvailablePieces(lockChargingVo);
+    }
+
+    /**
+     * 解锁库存
+     * @param lockChargingVo
+     * @return
+     */
+    @Override
+    @Transactional
+    public BaseResponse unlockAvailablePieces(LockChargingVo lockChargingVo) {
+        Long interfaceId = lockChargingVo.getInterfaceid();
+        Long orderNum = lockChargingVo.getOrderNum();
+        try {
+            interfaceChargingService.update(new UpdateWrapper<InterfaceCharging>().eq("interfaceid",interfaceId)
+                    .setSql("availablePieces = availablePieces + "+orderNum));
+        }catch (Exception e){
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR,"解锁库存失败");
+        }
+        redisTemplateUtils.delAllOnlinePage();
+        return ResultUtils.success(null);
+    }
+
+    /**
+     * 更新用户剩余可调用次数
+     * @param leftNumUpdateTo
+     * @return
+     */
+    @Override
+    @Transactional
+    public BaseResponse updateUserLeftNum(LeftNumUpdateTo leftNumUpdateTo){
+        return userInterfaceInfoService.updateUserLeftNum(leftNumUpdateTo);
+    }
+
+    /**
+     * 通过第三方登录
+     * @param oauth2ResTo
+     * @param type
+     * @return
+     */
+    @Override
+    @Transactional
+    public BaseResponse oauth2Login(Oauth2ResTo oauth2ResTo, String type) {
+        String accessToken = oauth2ResTo.getAccess_token();
+        if (null == accessToken){
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+        }
+        //拿到用户的信息
+        LoginUser loginUser = null;
+        if ("gitee".equals(type)) {
+            //6.访问用户信息
+            HttpResponse giteeResponse = HttpRequest.get("https://gitee.com/api/v5/user?access_token=" + accessToken).execute();
+            loginUser = oauth2LoginUtils.giteeOrGithubOauth2Login(type, giteeResponse);
+        }else {
+            HttpResponse githubResponse = HttpRequest.get("https://api.github.com/user")
+                    .header("Authorization","Bearer "+accessToken)
+                    .timeout(30000)
+                    //超时，毫秒
+                    .execute();
+            loginUser = oauth2LoginUtils.giteeOrGithubOauth2Login(type, githubResponse);
+        }
+        return ResultUtils.success(loginUser);
     }
 }

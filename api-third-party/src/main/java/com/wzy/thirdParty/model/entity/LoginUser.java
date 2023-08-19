@@ -1,5 +1,7 @@
-package com.wzy.api.model.entity;
+package com.wzy.thirdParty.model.entity;
 
+import com.alibaba.fastjson.annotation.JSONField;
+import common.model.entity.User;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -23,6 +25,7 @@ public class LoginUser implements UserDetails {
         this.permissions = permissions;
     }
 
+    @JSONField(serialize = false)
     private transient List<GrantedAuthority> authorities;
 
     @Override

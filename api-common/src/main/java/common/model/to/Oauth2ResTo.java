@@ -2,11 +2,13 @@ package common.model.to;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * @author Asce
  */
 @Data
-public class Oauth2ResTo {
+public class Oauth2ResTo implements Serializable {
 
     private String access_token;
 

@@ -62,12 +62,6 @@ public class UserController {
         return userService.checkUserLogin(request,response);
     }
 
-    @ApiOperation("通过第三方登录")
-    @PostMapping("/oauth2/login")
-    public BaseResponse oauth2Login(@RequestBody Oauth2ResTo oauth2ResTo, @RequestParam("type") String type ,HttpServletResponse httpServletResponse){
-        return userService.oauth2Login(oauth2ResTo,type,httpServletResponse);
-    }
-
     @ApiOperation("修改用户密码")
     @PostMapping("/updateUserPass")
     public BaseResponse updateUserPass(String password,HttpServletRequest request){
@@ -120,7 +114,7 @@ public class UserController {
         return ResultUtils.success(result);
     }
 
-    @ApiOperation("用户通过 用户名和密码 登录")
+    @ApiOperation("用户通过用户名和密码登录")
     @PostMapping("/login")
     public BaseResponse<LoginUserVo> userLoginByPwd(UserLoginRequest userLoginRequest, HttpServletResponse response) {
         if (userLoginRequest == null) {

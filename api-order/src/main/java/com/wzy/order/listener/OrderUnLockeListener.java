@@ -2,14 +2,15 @@ package com.wzy.order.listener;
 
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.rabbitmq.client.Channel;
-import com.wzy.order.feign.UserFeignServices;
 import com.wzy.order.model.entity.ApiOrder;
 import com.wzy.order.model.entity.ApiOrderLock;
 import com.wzy.order.service.ApiOrderLockService;
 import com.wzy.order.service.ApiOrderService;
+import common.dubbo.ApiInnerService;
 import common.model.BaseResponse;
 import common.model.vo.LockChargingVo;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,14 +25,15 @@ import java.io.IOException;
 @Component
 public class OrderUnLockeListener {
 
+    @DubboReference
+    private ApiInnerService apiInnerService;
+
     @Autowired
     private ApiOrderLockService apiOrderLockService;
 
     @Autowired
     private ApiOrderService apiOrderService;
 
-    @Autowired
-    private UserFeignServices userFeignServices;
 
     /**
      * 监听死信队列 - 记录订单超时未支付的消息后的日志
@@ -52,7 +54,7 @@ public class OrderUnLockeListener {
                 LockChargingVo lockChargingVo = new LockChargingVo();
                 lockChargingVo.setOrderNum(orderNum);
                 lockChargingVo.setInterfaceid(apiOrder.getInterfaceId());
-                BaseResponse baseResponse = userFeignServices.unlockAvailablePieces(lockChargingVo);
+                BaseResponse baseResponse = apiInnerService.unlockAvailablePieces(lockChargingVo);
                 if (baseResponse.getCode() != 0) {
                     throw new RuntimeException();
                 }
@@ -74,7 +76,7 @@ public class OrderUnLockeListener {
                 LockChargingVo lockChargingVo = new LockChargingVo();
                 lockChargingVo.setOrderNum(orderNum);
                 lockChargingVo.setInterfaceid(apiOrder.getInterfaceId());
-                BaseResponse baseResponse = userFeignServices.unlockAvailablePieces(lockChargingVo);
+                BaseResponse baseResponse = apiInnerService.unlockAvailablePieces(lockChargingVo);
                 if (baseResponse.getCode() != 0) {
                     throw new RuntimeException();
                 }
