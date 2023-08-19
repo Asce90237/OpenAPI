@@ -24,6 +24,9 @@ public class InterfaceController {
     @Resource
     private YuCongMingClient client;
 
+    @Value("${img.url}")
+    private String base_url;
+
     @Value("${api_interface.ai_chat}")
     private String AiModelId;
 
@@ -32,9 +35,6 @@ public class InterfaceController {
 
     @Value("${api_interface.ppt_outline}")
     private String PPTModelId;
-
-    @Value("${img.url}")
-    private String base_url;
 
     @Value("${api_interface.rating_generation}")
     private String RatingModelId;

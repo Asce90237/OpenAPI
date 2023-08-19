@@ -19,7 +19,7 @@ import java.util.Set;
  */
 @Slf4j
 @Component
-public class RequireAllControllerMethodsUtils extends WebApplicationObjectSupport  {
+public class MethodUrlMapUtils extends WebApplicationObjectSupport  {
 
     public Map<String,String> hashmap = new HashMap<>();
 

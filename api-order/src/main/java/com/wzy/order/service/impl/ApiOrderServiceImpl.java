@@ -152,7 +152,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
             InterfaceInfo interfaceInfo = JSONUtil.toBean(entries, InterfaceInfo.class);
             orderInterfaceInfoVo.setName(interfaceInfo.getName());
             orderInterfaceInfoVo.setDescription(interfaceInfo.getDescription());
-        }, executor);
+        }, executor); //使用线程池
 
         //5、使用雪花算法生成订单id，并保存订单
         String orderSn = generateOrderSn(String.valueOf(userId));
