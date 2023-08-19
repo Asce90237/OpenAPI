@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 
 
 /**
- * 权限校验 AOP
+ * 权限校验 AOP 已替换为spring security统一鉴权
  *
  * 
  */
@@ -47,7 +47,7 @@ public class AuthInterceptor {
         String mustRole = authCheck.mustRole();
         RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
         HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
-        // 当前登录用户 todo 替换所有userService.getLoginUser，不再进行aop处理
+        // 当前登录用户
         User user = userService.getLoginUser(request);
         // 拥有任意权限即通过(anyRole是我指定的)
         if (CollectionUtils.isNotEmpty(anyRole)) {
