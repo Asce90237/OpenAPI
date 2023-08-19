@@ -2,6 +2,7 @@ package com.wzy.order.filter;
 
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
+import cn.hutool.jwt.RegisteredPayload;
 import com.google.gson.Gson;
 import com.wzy.order.model.entity.LoginUser;
 import com.wzy.order.utils.TokenUtils;
@@ -18,6 +19,7 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 @Component
 public class JWTAuthenticationTokenFilter implements Filter {
@@ -58,7 +60,6 @@ public class JWTAuthenticationTokenFilter implements Filter {
         if (!verifyTime) {
             throw new RuntimeException("token过期");
         }
-        //todo 刷新token
         //解析token
         JWT jwt = JWTUtil.parseToken(authorization);
         String id = (String) jwt.getPayload("id");
@@ -66,6 +67,17 @@ public class JWTAuthenticationTokenFilter implements Filter {
         String json = stringRedisTemplate.opsForValue().get(CommonConstant.JWT_CACHE_PREFIX + id);
         if (json == null) {
             throw new RuntimeException("用户登录信息过期");
+        }
+        //判断是否刷新token，若jwt过期时间与当前时间差值小于10分钟，则重新颁发，且刷新缓存
+        long dateTime = (long) jwt.getPayload(CommonConstant.TOKEN_EXP_TIME);
+        boolean ifRefresh = tokenUtils.ifRefresh(dateTime);
+        if (ifRefresh) {
+            // 若即将过期，重新颁发，达到刷新
+            stringRedisTemplate.opsForValue().set(CommonConstant.JWT_CACHE_PREFIX + id, json, 1, TimeUnit.HOURS);
+            String newToken = tokenUtils.generateToken(id);
+            Cookie cookie = new Cookie(CookieConstant.headAuthorization, newToken);
+            cookie.setPath("/"); // 设置 Cookie 的路径
+            response.addCookie(cookie);
         }
         Gson gson = new Gson();
         LoginUser user = gson.fromJson(json, LoginUser.class);

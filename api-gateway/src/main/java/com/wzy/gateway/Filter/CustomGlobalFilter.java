@@ -179,7 +179,13 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                                         // 打印日志
                                         log.info("响应结果：" + data);
                                         Gson gson = new Gson();
-                                        BaseResponse res = gson.fromJson(data, BaseResponse.class);
+                                        BaseResponse res = null;
+                                        try {
+                                            res = gson.fromJson(data, BaseResponse.class);
+                                        }
+                                        catch (Exception e) {
+                                            return bufferFactory.wrap(content);
+                                        }
                                         // 接口异常不扣减次数
                                         if (res.getCode() != 0) {
                                             return bufferFactory.wrap(content);

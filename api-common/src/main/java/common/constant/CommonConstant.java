@@ -23,4 +23,6 @@ public interface CommonConstant {
     String INVOKE_ERROR = "{\"code\":50003,\"message\":\"接口异常，请稍后再试或联系管理员处理！\"}";
 
     String JWT_CACHE_PREFIX = "login:";
+
+    String TOKEN_EXP_TIME = "final";
 }

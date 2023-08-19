@@ -7,6 +7,7 @@ import cn.hutool.jwt.JWTUtil;
 import cn.hutool.jwt.RegisteredPayload;
 import cn.hutool.jwt.signers.JWTSigner;
 import cn.hutool.jwt.signers.JWTSignerUtil;
+import common.constant.CommonConstant;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -32,7 +33,7 @@ public class TokenUtils {
      */
     public String generateToken(String id){
         DateTime now = DateTime.now();
-        DateTime newTime = now.offsetNew(DateField.HOUR, 168); //过期时间7天
+        DateTime newTime = now.offsetNew(DateField.HOUR, 1); //过期时间1小时
         // payload荷载信息
         Map<String, Object> payload  = new HashMap<String, Object>() {
             private static final long serialVersionUID = 1L;
@@ -43,6 +44,7 @@ public class TokenUtils {
                 put(RegisteredPayload.ISSUED_AT, now);
                 //过期时间
                 put(RegisteredPayload.EXPIRES_AT, newTime);
+                put(CommonConstant.TOKEN_EXP_TIME, System.currentTimeMillis() + 1000 * 60 * 60); // 这个是自定义的过期时间，便于判定是否需要刷新
             }
         };
         String token = JWTUtil.createToken(payload, signer);
@@ -52,12 +54,12 @@ public class TokenUtils {
 
     /**
      * 验证token是否合法
-     * @param token
+     * @param authorization
      * @return
      */
-    public boolean verifyToken(String token){
+    public boolean verifyToken(String authorization){
         try {
-            JWT jwt = JWTUtil.parseToken(token);
+            JWT jwt = JWTUtil.parseToken(authorization);
             // HS512
             String algorithm = jwt.getAlgorithm();
             if (!"HS512".equals(algorithm)){
@@ -76,31 +78,25 @@ public class TokenUtils {
 
     /**
      * 验证token是否过期
-     * 验证JWT是否有效，验证包括：
-     * Token是否正确
-     * RegisteredPayload.NOT_BEFORE：生效时间不能晚于当前时间
-     * RegisteredPayload.EXPIRES_AT：失效时间不能早于当前时间
-     * RegisteredPayload.ISSUED_AT： 签发时间不能晚于当前时间
      * Parameters:
      * leeway - 容忍空间，单位：秒。当不能晚于当前时间时，向后容忍；不能早于向前容忍。
-     * @param token
+     * @param authorization
      * @return
      */
-    public  boolean verifyTime(String token){
-        JWT jwt = JWTUtil.parseToken(token);
+    public boolean verifyTime(String authorization){
+        JWT jwt = JWTUtil.parseToken(authorization);
         boolean verifyTime = jwt.validate(0);
         return !verifyTime;
     }
 
     /**
-     * 刷新token
-     * @param token
+     * 验证是否需要刷新
+     * @param time
      * @return
      */
-    public String refreshToken(String token){
-        JWT jwt = JWTUtil.parseToken(token);
-        String id = (String) jwt.getPayload("id");
-        String generateToken = generateToken(id);
-        return generateToken;
+    public boolean ifRefresh(long time) {
+        long current = System.currentTimeMillis();
+        long diff = Math.abs(current - time);
+        return diff < 10 * 60 * 1000;
     }
 }
