@@ -2,6 +2,7 @@ package com.wzy.api.schedule;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.wzy.api.mapper.UserInterfaceInfoMapper;
 import com.wzy.api.mapper.UserMapper;
 import com.wzy.api.model.entity.InterfaceInfo;
@@ -49,16 +50,9 @@ public class userAPIStatusResetSchedule {
      */
     @Scheduled(cron = "0 0 0 * * *")
     public void resetField() {
-        LambdaQueryWrapper<UserInterfaceInfo> lambdaQueryWrapper = new LambdaQueryWrapper<>();
-        lambdaQueryWrapper.eq(UserInterfaceInfo::getStatus, 1);
-        List<UserInterfaceInfo> list = userInterfaceInfoService.list(lambdaQueryWrapper);
-        List<UserInterfaceInfo> userInterfaceInfos = list.stream().map(a -> {
-            a.setStatus(0);
-            return a;
-        }).collect(Collectors.toList());
-        userInterfaceInfos.forEach(a -> {
-            userInterfaceInfoService.updateById(a);
-        });
+        UpdateWrapper<UserInterfaceInfo> updateWrapper = new UpdateWrapper<>();
+        updateWrapper.eq("status", 1).set("status", 0);
+        userInterfaceInfoMapper.update(null, updateWrapper);
     }
 
     /**

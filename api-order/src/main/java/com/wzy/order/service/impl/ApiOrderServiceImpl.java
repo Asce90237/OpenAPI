@@ -22,6 +22,7 @@ import com.wzy.order.model.to.ApiOrderStatusInfoDto;
 import com.wzy.order.model.vo.ApiOrderStatusVo;
 import com.wzy.order.service.ApiOrderLockService;
 import com.wzy.order.service.ApiOrderService;
+import com.wzy.order.utils.RedisIdWorker;
 import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
 import common.constant.CookieConstant;
@@ -72,6 +73,9 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
 
     @DubboReference
     private ApiInnerService apiInnerService;
+
+    @Resource
+    private RedisIdWorker redisIdWorker;
 
     @Autowired
     private RedisTemplate redisTemplate;
@@ -154,8 +158,9 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
             orderInterfaceInfoVo.setDescription(interfaceInfo.getDescription());
         }, executor); //使用线程池
 
-        //5、使用雪花算法生成订单id，并保存订单
-        String orderSn = generateOrderSn(String.valueOf(userId));
+        //5、使用redis自增生成订单id，并保存订单
+        long id = redisIdWorker.nextId("order");
+        String orderSn = String.valueOf(id);
         ApiOrder apiOrder = new ApiOrder();
         apiOrder.setTotalAmount(totalAmount);
         apiOrder.setOrderSn(orderSn);
@@ -309,17 +314,6 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
             stringRedisTemplate.opsForValue().set(RedisConstant.API_INDEX_ORDER_CNT, cnt, 1, TimeUnit.DAYS);
         }
         return ResultUtils.success(cnt);
-    }
-
-
-    /**
-     * 生成订单号
-     * @return
-     */
-    private String generateOrderSn(String userId) {
-        String timeId = IdWorker.getTimeId();
-        String substring = timeId.substring(0, timeId.length() - 15);
-        return substring + RandomUtil.randomNumbers(5) + userId.substring(userId.length()-2,userId.length());
     }
 }
 

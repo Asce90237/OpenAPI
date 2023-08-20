@@ -65,6 +65,8 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         String accessKey = headers.getFirst("accessKey");
         String sign = headers.getFirst("sign");
         String body = headers.getFirst("body");
+//        String nonce = headers.getFirst("nonce");
+//        String timestamp = headers.getFirst("timestamp");
         // 判空
         if(sign == null || accessKey == null || body == null) {
             return handleRejectResponse(response, ErrorCode.ILLEGAL_ERROR);
@@ -82,11 +84,17 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
                 return handleRejectResponse(response, ErrorCode.PARAMS_ERROR);
             }
         }
-        // 判断ak是否合法
+        // 判断是否是重放攻击
         Auth auth = apiInnerService.getAuthByAk(accessKey);
+        // 判断ak是否合法
         if (auth == null) {
             return handleRejectResponse(response,ErrorCode.AK_NOT_FOUND);
         }
+//        boolean isReProduct = apiInnerService.isReProduct(String.valueOf(auth.getUserid()), nonce, timestamp);
+//        if (isReProduct) {
+//            return handleRejectResponse(response, ErrorCode.ILLEGAL_ERROR);
+//        }
+        // 判断sk是否合法
         String checkSign = SignUtils.genSign(body, auth.getSecretkey());
         if (checkSign == null || !checkSign.equals(sign)) {
             return handleRejectResponse(response,ErrorCode.SK_ERROR);

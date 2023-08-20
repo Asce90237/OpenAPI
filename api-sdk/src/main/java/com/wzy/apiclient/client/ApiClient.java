@@ -60,9 +60,10 @@ public class ApiClient {
         map.put("body", body);
         // 加密防篡改和泄露sk
         map.put("sign", SignUtils.genSign(body, this.secretKey));
-        // todo 增加随机数，只能使用一次，防重放攻击，服务端需保存该随机数
-//        map.put("nonce", RandomUtil.randomNumbers(4));
-//        map.put("timestamp", String.valueOf(DateUtil.date(System.currentTimeMillis())));
+        // 增加随机数，只能使用一次，防重放攻击，服务端需保存该随机数
+//        map.put("nonce", RandomUtil.randomNumbers(8));
+        // 随机数会定时清除，再添加时间戳
+//        map.put("timestamp", String.valueOf(System.currentTimeMillis()));
         return map;
     }
 

@@ -1,6 +1,7 @@
 package com.wzy.api.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.wzy.api.mapper.AuthMapper;
 import com.wzy.api.model.dto.interfaceinfo.InterfaceInfoInvokRequest;
 import com.wzy.api.model.entity.Auth;
 import com.wzy.api.model.entity.LoginUser;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 
 @RestController
@@ -25,6 +27,9 @@ public class InterfaceClientController {
 
     @Autowired
     private AuthService authService;
+
+    @Resource
+    private AuthMapper authMapper;
 
     /**
      * 接口在线调用

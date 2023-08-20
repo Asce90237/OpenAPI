@@ -2,8 +2,10 @@ package com.wzy.api.controller;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
+import cn.hutool.json.JSONArray;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
+import com.wzy.api.config.ApiPathConfig;
 import com.yupi.yucongming.dev.client.YuCongMingClient;
 import com.yupi.yucongming.dev.common.BaseResponse;
 import com.yupi.yucongming.dev.model.DevChatRequest;
@@ -13,9 +15,14 @@ import common.Utils.AuthPhoneNumber;
 import common.model.enums.ErrorCode;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @RestController
@@ -23,6 +30,9 @@ public class InterfaceController {
 
     @Resource
     private YuCongMingClient client;
+
+    @Resource
+    private ApiPathConfig apiPathConfig;
 
     @Value("${img.url}")
     private String base_url;
@@ -40,12 +50,12 @@ public class InterfaceController {
     private String RatingModelId;
 
     @GetMapping("/ai/chat")
-    public String chatWithAI(Object name) throws Exception {
-        byte[] bytes = name.toString().getBytes("iso8859-1");
-        name = new String(bytes,"utf-8");
+    public String chatWithAI(Object parmeter) throws Exception {
+        byte[] bytes = parmeter.toString().getBytes("iso8859-1");
+        parmeter = new String(bytes,"utf-8");
         DevChatRequest devChatRequest = new DevChatRequest();
         devChatRequest.setModelId(Long.valueOf(AiModelId));
-        devChatRequest.setMessage(name.toString());
+        devChatRequest.setMessage(parmeter.toString());
 
         BaseResponse<DevChatResponse> response = client.doChat(devChatRequest);
         if (response == null || response.getCode() != 0 || response.getData() == null) {
@@ -55,12 +65,12 @@ public class InterfaceController {
     }
 
     @GetMapping("/emoji/change")
-    public String emojiChange(Object name) throws Exception {
-        byte[] bytes = name.toString().getBytes("iso8859-1");
-        name = new String(bytes,"utf-8");
+    public String emojiChange(Object parmeter) throws Exception {
+        byte[] bytes = parmeter.toString().getBytes("iso8859-1");
+        parmeter = new String(bytes,"utf-8");
         DevChatRequest devChatRequest = new DevChatRequest();
         devChatRequest.setModelId(Long.valueOf(EmojiModelId));
-        devChatRequest.setMessage(name.toString());
+        devChatRequest.setMessage(parmeter.toString());
 
         BaseResponse<DevChatResponse> response = client.doChat(devChatRequest);
         if (response == null || response.getCode() != 0 || response.getData() == null) {
@@ -70,7 +80,7 @@ public class InterfaceController {
     }
 
     @GetMapping("/img/getByRandom")
-    public String getImageByRandom(Object name) {
+    public String getImageByRandom(Object parmeter) {
         Random random = new Random();
         // 随机生成1到200数字
         int num = random.nextInt(200) + 1;
@@ -78,20 +88,20 @@ public class InterfaceController {
         return url;
     }
 
-    @GetMapping("/name/get")
-    public String getNameByGet(Object name) throws Exception {
-        byte[] bytes = name.toString().getBytes("iso8859-1");
-        name = new String(bytes,"utf-8");
-        return "GET 你的名字是：" + name;
+    @GetMapping("/parmeter/get")
+    public String getparmeterByGet(Object parmeter) throws Exception {
+        byte[] bytes = parmeter.toString().getBytes("iso8859-1");
+        parmeter = new String(bytes,"utf-8");
+        return "GET 你的名字是：" + parmeter;
     }
 
     @GetMapping("/ppt/generation")
-    public String generatePPT(Object name) throws Exception {
-        byte[] bytes = name.toString().getBytes("iso8859-1");
-        name = new String(bytes,"utf-8");
+    public String generatePPT(Object parmeter) throws Exception {
+        byte[] bytes = parmeter.toString().getBytes("iso8859-1");
+        parmeter = new String(bytes,"utf-8");
         DevChatRequest devChatRequest = new DevChatRequest();
         devChatRequest.setModelId(Long.valueOf(PPTModelId));
-        devChatRequest.setMessage(name.toString());
+        devChatRequest.setMessage(parmeter.toString());
 
         BaseResponse<DevChatResponse> response = client.doChat(devChatRequest);
         if (response == null || response.getCode() != 0 || response.getData() == null) {
@@ -101,12 +111,12 @@ public class InterfaceController {
     }
 
     @GetMapping("/rating/generation")
-    public String generateRating(Object name) throws Exception {
-        byte[] bytes = name.toString().getBytes("iso8859-1");
-        name = new String(bytes,"utf-8");
+    public String generateRating(Object parmeter) throws Exception {
+        byte[] bytes = parmeter.toString().getBytes("iso8859-1");
+        parmeter = new String(bytes,"utf-8");
         DevChatRequest devChatRequest = new DevChatRequest();
         devChatRequest.setModelId(Long.valueOf(RatingModelId));
-        devChatRequest.setMessage(name.toString());
+        devChatRequest.setMessage(parmeter.toString());
 
         BaseResponse<DevChatResponse> response = client.doChat(devChatRequest);
         if (response == null || response.getCode() != 0 || response.getData() == null) {
@@ -125,7 +135,7 @@ public class InterfaceController {
             throw new BusinessException(ErrorCode.API_INVOKE_ERROR, "手机号非法");
         }
         // 访问第三方接口
-        response = HttpRequest.post("https://zj.v.api.aa1.cn/api/phone-02/?num=" + num)
+        response = HttpRequest.post(apiPathConfig.getTeladdress() + num)
                 .timeout(30000)//超时，毫秒
                 .execute();
         String address = null;
@@ -133,24 +143,155 @@ public class InterfaceController {
             throw new BusinessException(ErrorCode.API_INVOKE_ERROR, "第三方接口调用错误");
         }
         String body = response.body();
+        String data = getData(body);
+        JSONObject jsonObject1 = JSONUtil.parseObj(data);
+        address = jsonObject1.getStr("address");
+        return address;
+    }
+
+    private String getData(String body) {
         JSONObject jsonObject = JSONUtil.parseObj(body);
         String code = jsonObject.getStr("code");
         if (!code.equals("200")) {
             throw new BusinessException(ErrorCode.API_INVOKE_ERROR, "第三方接口调用错误");
         }
         String data = jsonObject.getStr("data");
-        JSONObject jsonObject1 = JSONUtil.parseObj(data);
-        address = jsonObject1.getStr("address");
-        return address;
+        return data;
     }
 
     @GetMapping("/word/getByRandom")
-    public String getWordByRandom(Object name) {
+    public String getWordByRandom(Object parmeter) {
         Random random = new Random();
         int num = random.nextInt(86);
         String word = interestingSentences[num];
         return word;
     }
+
+    @GetMapping("/get/qqimg")
+    public String getQQImg(Object parmeter) {
+        String url = apiPathConfig.getQqimg() + parmeter;
+        HttpResponse response = HttpRequest.get(url).timeout(30000).execute();
+        Map<String, List<String>> headers = response.headers();
+        String s = headers.get("location").get(0);
+        return s;
+    }
+
+    @PostMapping("/baidu/hot")
+    public String getBaiduHot(Object parmeter) {
+        String url = apiPathConfig.getBaiduhot();
+        HttpResponse response = HttpRequest.post(url).timeout(30000).execute();
+        String body = response.body();
+        String json = getData(body);
+        JSONArray jsonArray = JSONUtil.parseArray(json);
+        List<String> parmeterList = new ArrayList<>();
+        for (Object obj : jsonArray) {
+            JSONObject jsonObject = (JSONObject) obj;
+            String x = jsonObject.getStr("name");
+            parmeterList.add(x);
+        }
+        String s = JSONUtil.toJsonStr(parmeterList);
+        return s.substring(1, s.length() - 1).replace("\"", "");
+    }
+
+    @PostMapping("/douyin/hot")
+    public String getDouYinHot(Object parmeter) {
+        String url = apiPathConfig.getDouyinhot();
+        HttpResponse response = HttpRequest.post(url).timeout(30000).execute();
+        String body = response.body();
+        String json = getData(body);
+        JSONArray jsonArray = JSONUtil.parseArray(json);
+        List<String> parmeterList = new ArrayList<>();
+        for (Object obj : jsonArray) {
+            JSONObject jsonObject = (JSONObject) obj;
+            String x = jsonObject.getStr("name");
+            parmeterList.add(x);
+        }
+        String s = JSONUtil.toJsonStr(parmeterList);
+        return s.substring(1, s.length() - 1).replace("\"", "");
+    }
+
+    @PostMapping("/weibo/hot")
+    public String getWeiboHot(Object parmeter) {
+        String url = apiPathConfig.getWeibohot();
+        HttpResponse response = HttpRequest.post(url).timeout(30000).execute();
+        String body = response.body();
+        String json = getData(body);
+        JSONArray jsonArray = JSONUtil.parseArray(json);
+        List<String> parmeterList = new ArrayList<>();
+        for (Object obj : jsonArray) {
+            JSONObject jsonObject = (JSONObject) obj;
+            String x = jsonObject.getStr("name");
+            parmeterList.add(x);
+        }
+        String s = JSONUtil.toJsonStr(parmeterList);
+        return s.substring(1, s.length() - 1).replace("\"", "");
+    }
+
+    @PostMapping("/zhihu/hot")
+    public String getZhiHuHot(Object parmeter) {
+        String url = apiPathConfig.getZhihuhot();
+        HttpResponse response = HttpRequest.post(url).timeout(30000).execute();
+        String body = response.body();
+        String json = getData(body);
+        JSONArray jsonArray = JSONUtil.parseArray(json);
+        List<String> parmeterList = new ArrayList<>();
+        for (Object obj : jsonArray) {
+            JSONObject jsonObject = (JSONObject) obj;
+            String x = jsonObject.getStr("name");
+            parmeterList.add(x);
+        }
+        String s = JSONUtil.toJsonStr(parmeterList);
+        return s.substring(1, s.length() - 1).replace("\"", "");
+    }
+
+    @PostMapping("/random/color")
+    public String getRandomColor(Object parmeter) {
+        String url = apiPathConfig.getRandomcolor();
+        HttpResponse response = HttpRequest.post(url).timeout(30000).execute();
+        String body = response.body();
+        String json = getData(body);
+        JSONObject obj = JSONUtil.parseObj(json);
+        String s = obj.getStr("color");
+        return s;
+    }
+
+    @PostMapping("/customer/ip")
+    public String getCustomerIP(Object parmeter) {
+        String url = apiPathConfig.getIpinfo() + parmeter;
+        HttpResponse response = HttpRequest.post(url).timeout(30000).execute();
+        String body = response.body();
+        String json = getData(body);
+        return json.substring(1, json.length() - 1).replace("\"", "");
+    }
+
+    @PostMapping("/rubbish/tel")
+    public String getIfRubbishTel(Object parmeter) {
+        String url = apiPathConfig.getTelvalid() + parmeter;
+        HttpResponse response = HttpRequest.post(url).timeout(30000).execute();
+        String body = response.body();
+        String json = getData(body);
+        return json.substring(1, json.length() - 1).replace("\"", "");
+    }
+
+    @PostMapping("/history/today")
+    public String getHistoryToday(Object parmeter) {
+        String url = apiPathConfig.getHistorytoday();
+        HttpResponse response = HttpRequest.post(url).timeout(30000).execute();
+        String body = response.body();
+        String json = getData(body);
+        JSONObject data = JSONUtil.parseObj(json);
+        String list = data.getStr("list");
+        JSONArray jsonArray = JSONUtil.parseArray(list);
+        List<String> parmeterList = new ArrayList<>();
+        for (Object obj : jsonArray) {
+            JSONObject jsonObject = (JSONObject) obj;
+            String x = jsonObject.getStr("title");
+            parmeterList.add(x);
+        }
+        String s = JSONUtil.toJsonStr(parmeterList);
+        return s.substring(1, s.length() - 1).replace("\"", "");
+    }
+
 
     private String[] interestingSentences = new String[] {
             "梦想是指引我们前进的灯塔。",

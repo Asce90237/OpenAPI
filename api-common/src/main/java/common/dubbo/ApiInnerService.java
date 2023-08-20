@@ -103,4 +103,13 @@ public interface ApiInnerService {
      */
     BaseResponse oauth2Login(Oauth2ResTo oauth2ResTo, String type);
 
+    /**
+     * 判断是否是重放攻击
+     * @param userId
+     * @param nonce
+     * @param timestamp
+     * @return
+     */
+    boolean isReProduct(String userId, String nonce, String timestamp);
+
 }

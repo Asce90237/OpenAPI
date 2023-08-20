@@ -20,4 +20,6 @@ public class RedisConstant {
     public static final String API_INDEX_ORDER_CNT = "api:index:orderCnt";
 
     public static final String API_INDEX_INTERFACE_CNT = "api:index:interfaceCnt";
+
+    public static final String USER_BITMAP = "bitmap:";
 }

@@ -36,6 +36,7 @@ import com.wzy.api.utils.Oauth2LoginUtils;
 import com.wzy.api.utils.RedisTemplateUtils;
 import common.Exception.BusinessException;
 import common.Utils.ResultUtils;
+import common.constant.RedisConstant;
 import common.dubbo.ApiInnerService;
 import common.model.BaseResponse;
 import common.model.entity.Auth;
@@ -46,10 +47,12 @@ import common.model.vo.LockChargingVo;
 import common.model.vo.LoginUserVo;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletResponse;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Asce
@@ -77,6 +80,9 @@ public class ApiInnerServiceImpl implements ApiInnerService {
 
     @Autowired
     private Oauth2LoginUtils oauth2LoginUtils;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public Auth getAuthByAk(String accessKey) {
@@ -241,5 +247,32 @@ public class ApiInnerServiceImpl implements ApiInnerService {
             loginUser = oauth2LoginUtils.giteeOrGithubOauth2Login(type, githubResponse);
         }
         return ResultUtils.success(loginUser);
+    }
+
+    /**
+     * 判断是否是重放攻击
+     * @param userId
+     * @param nonce
+     * @param timestamp
+     * @return
+     */
+    @Override
+    public boolean isReProduct(String userId, String nonce, String timestamp) {
+        // 判断随机数是否已经使用过
+        long bit = Long.parseLong(nonce);
+        Boolean b = stringRedisTemplate.opsForValue().getBit(RedisConstant.USER_BITMAP + userId, bit);
+        if (b != null && b) {
+            return true;
+        }
+        // 判断时间戳是否过期
+        long time = Long.parseLong(timestamp);
+        boolean timeIsValid = Math.abs(time - System.currentTimeMillis()) > 1000 * 60 * 60 * 6;
+        if (timeIsValid) {
+            return true;
+        }
+        // 保存随机数，设置过期时间6小时
+        stringRedisTemplate.opsForValue().setBit(RedisConstant.USER_BITMAP + userId, bit, true);
+        stringRedisTemplate.expire(RedisConstant.USER_BITMAP + userId, 6, TimeUnit.HOURS);
+        return false;
     }
 }
