@@ -4,7 +4,7 @@ import cn.hutool.json.JSONUtil;
 import com.wzy.api.service.MainService;
 import com.wzy.api.util.ApiUriUtil;
 import com.wzy.api.util.MethodUrlMapUtils;
-import com.wzy.apiclient.model.Api;
+import love.openapi.apiclient.model.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;

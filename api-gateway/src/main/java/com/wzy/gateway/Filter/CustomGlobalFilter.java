@@ -4,9 +4,11 @@ import cn.hutool.json.JSONUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
-import com.wzy.apiclient.model.Api;
-import com.wzy.apiclient.utils.SignUtils;
+import love.openapi.apiclient.model.Api;
+import love.openapi.apiclient.utils.SignUtils;
+import common.constant.CommonConstant;
 import common.model.BaseResponse;
+import common.model.entity.ApiInfo;
 import common.model.enums.ErrorCode;
 import common.Utils.ResultUtils;
 import common.dubbo.ApiInnerService;
@@ -72,15 +74,14 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
             return handleRejectResponse(response, ErrorCode.ILLEGAL_ERROR);
         }
         Api api = JSONUtil.toBean(body, Api.class);
-        // 判断接口是否存在 todo 走缓存
-        boolean apiIdIsValid = apiInnerService.apiIdIsValid(api.getInterfaceId());
-        if (!apiIdIsValid) {
+        // 判断接口是否存在
+        ApiInfo apiInfo = apiInnerService.getApiInfoById(api.getInterfaceId());
+        if (apiInfo == null) {
             return handleRejectResponse(response, ErrorCode.API_NOT_FOUND);
         }
         // 判断接口参数是否允许为空
         if (api.getParameter() == null || api.getParameter().length() == 0) {
-            boolean paramsIsValid = apiInnerService.paramsIsValid(api.getInterfaceId());
-            if (!paramsIsValid) {
+            if (!CommonConstant.INTERFACE_PARAM_STATUS.equals(apiInfo.getRequestParams())) {
                 return handleRejectResponse(response, ErrorCode.PARAMS_ERROR);
             }
         }

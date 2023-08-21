@@ -103,4 +103,7 @@
         ORDER BY
             DATE_FORMAT(updateTime, '%Y-%m-%d') DESC;
     </select>
+    <select id="getApiInfoById" resultType="common.model.entity.ApiInfo">
+        select requestParams from interface_info where id = #{id} and status = 1;
+    </select>
 </mapper>

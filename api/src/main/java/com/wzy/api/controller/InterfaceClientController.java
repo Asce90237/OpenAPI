@@ -7,9 +7,9 @@ import com.wzy.api.model.entity.Auth;
 import com.wzy.api.model.entity.LoginUser;
 import com.wzy.api.model.entity.User;
 import com.wzy.api.service.AuthService;
-import com.wzy.apiclient.client.ApiClient;
-import com.wzy.apiclient.common.BaseResponse;
-import com.wzy.apiclient.model.Api;
+import love.openapi.apiclient.client.ApiClient;
+import love.openapi.apiclient.common.BaseResponse;
+import love.openapi.apiclient.model.Api;
 import common.model.enums.ErrorCode;
 import common.Exception.BusinessException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +56,7 @@ public class InterfaceClientController {
             throw new BusinessException(ErrorCode.AK_NOT_FOUND, "ak被禁用或不存在");
         }
         ApiClient apiClient = new ApiClient(auth.getAccesskey(),auth.getSecretkey());
-        com.wzy.apiclient.common.BaseResponse result = apiClient.getResult(api);
+        love.openapi.apiclient.common.BaseResponse result = apiClient.getResult(api);
         return result;
     }
 }

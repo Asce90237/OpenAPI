@@ -25,6 +25,7 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.wzy.api.constant.CommonConstant;
 import com.wzy.api.mapper.AuthMapper;
 import com.wzy.api.mapper.InterfaceChargingMapper;
+import com.wzy.api.mapper.InterfaceInfoMapper;
 import com.wzy.api.model.entity.InterfaceCharging;
 import com.wzy.api.model.entity.InterfaceInfo;
 import com.wzy.api.model.entity.LoginUser;
@@ -39,6 +40,7 @@ import common.Utils.ResultUtils;
 import common.constant.RedisConstant;
 import common.dubbo.ApiInnerService;
 import common.model.BaseResponse;
+import common.model.entity.ApiInfo;
 import common.model.entity.Auth;
 import common.model.enums.ErrorCode;
 import common.model.to.LeftNumUpdateTo;
@@ -71,6 +73,9 @@ public class ApiInnerServiceImpl implements ApiInnerService {
 
     @Resource
     private AuthMapper authMapper;
+
+    @Resource
+    private InterfaceInfoMapper interfaceInfoMapper;
 
     @Resource
     private InterfaceChargingMapper interfaceChargingMapper;
@@ -131,29 +136,13 @@ public class ApiInnerServiceImpl implements ApiInnerService {
     }
 
     /**
-     * 判断接口是否有效
-     * @param interfaceInfoId
+     * 根据接口id获取接口参数
+     * @param id
      * @return
      */
     @Override
-    public boolean apiIdIsValid(long interfaceInfoId) {
-        LambdaQueryWrapper<com.wzy.api.model.entity.InterfaceInfo> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getId, interfaceInfoId);
-        queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getStatus, 1);
-        InterfaceInfo one = interfaceInfoService.getOne(queryWrapper);
-        return one != null;
-    }
-
-    /**
-     * 判断参数是否可以为空
-     */
-    @Override
-    public boolean paramsIsValid(long interfaceInfoId) {
-        LambdaQueryWrapper<com.wzy.api.model.entity.InterfaceInfo> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getId, interfaceInfoId);
-        queryWrapper.eq(com.wzy.api.model.entity.InterfaceInfo::getStatus, 1);
-        InterfaceInfo one = interfaceInfoService.getOne(queryWrapper);
-        return one.getRequestParams().equals(CommonConstant.INTERFACE_PARAM_STATUS);
+    public ApiInfo getApiInfoById(long id) {
+        return interfaceInfoMapper.getApiInfoById(id);
     }
 
     /**

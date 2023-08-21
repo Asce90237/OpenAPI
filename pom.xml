@@ -124,7 +124,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.wzy</groupId>
+            <groupId>love.openapi</groupId>
             <artifactId>api-client</artifactId>
             <version>0.0.2</version>
         </dependency>

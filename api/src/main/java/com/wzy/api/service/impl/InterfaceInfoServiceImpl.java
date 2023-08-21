@@ -321,12 +321,12 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         BeanUtils.copyProperties(interfaceInfo,interfaceInfoVo);
         UserInterfaceInfo one = userInterfaceInfoService.getOne(new QueryWrapper<UserInterfaceInfo>().eq("userId", userId).eq("interfaceInfoId", id));
         if (null == one) {
-            // 请求数据不存在时，创建一个新的，并将调用次数设置为10
+            // 请求数据不存在时，创建一个新的，并将调用次数设置为100
             UserInterfaceInfo userInterfaceInfo = new UserInterfaceInfo();
             userInterfaceInfo.setUserId(userId);
             userInterfaceInfo.setInterfaceInfoId(id);
-            // 若用户未曾调用接口，则初始时会送10次机会
-            userInterfaceInfo.setLeftNum(10);
+            // 若用户未曾调用接口，则初始时会送100次机会
+            userInterfaceInfo.setLeftNum(100);
             userInterfaceInfo.setStatus(0);
             userInterfaceInfoService.save(userInterfaceInfo);
             interfaceInfoVo.setFlag(userInterfaceInfo.getStatus());
@@ -361,9 +361,9 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
         // 今日未领取
         if (one.getStatus() != 1) {
             one.setStatus(1);
-            int leftNum = one.getLeftNum() + 10;
-            // 设置领取最大限制，最多只能领到30次
-            leftNum = Math.min(leftNum, 30);
+            int leftNum = one.getLeftNum() + 50;
+            // 设置领取最大限制，最多只能领到1000次
+            leftNum = Math.min(leftNum, 1000);
             one.setLeftNum(leftNum);
             userInterfaceInfoService.updateById(one);
             interfaceInfoVo.setFlag(one.getStatus());

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.wzy.api.model.dto.interfaceinfo.InterfaceInfoQueryRequest;
 import com.wzy.api.model.entity.InterfaceInfo;
 import com.wzy.api.model.vo.AllInterfaceInfoVo;
+import common.model.entity.ApiInfo;
 import common.model.vo.EchartsVo;
 import org.apache.ibatis.annotations.Param;
 
@@ -24,6 +25,8 @@ public interface InterfaceInfoMapper extends BaseMapper<InterfaceInfo> {
     Page<AllInterfaceInfoVo> selectOnlinePage(Page<Object> page);
 
     List<EchartsVo> getInterfaceList(@Param("dateList") List<String> dateList);
+
+    ApiInfo getApiInfoById(long id);
 }
 
 

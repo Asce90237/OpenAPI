@@ -17,6 +17,7 @@
 package common.dubbo;
 
 import common.model.BaseResponse;
+import common.model.entity.ApiInfo;
 import common.model.entity.Auth;
 import common.model.to.LeftNumUpdateTo;
 import common.model.to.Oauth2ResTo;
@@ -48,16 +49,11 @@ public interface ApiInnerService {
     Auth getAuthByAk(String accessKey);
 
     /**
-     * 判断接口是否有效
-     * @param interfaceInfoId
+     * 根据接口id获取接口信息，只包含参数
+     * @param id
      * @return
      */
-    boolean apiIdIsValid(long interfaceInfoId);
-
-    /**
-     * 判断参数是否可以为空
-     */
-    boolean paramsIsValid(long interfaceInfoId);
+    ApiInfo getApiInfoById(long id);
 
     /**
      * 获取当前接口的剩余库存
