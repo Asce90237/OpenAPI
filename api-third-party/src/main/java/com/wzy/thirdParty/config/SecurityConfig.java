@@ -77,7 +77,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authorizeRequests()
-                .antMatchers("/oauth/**", "/alipay/notify").permitAll()
+                .antMatchers("/oauth/**", "/alipay/notify","/alipay/queryTradeStatus").permitAll()
                 // 除上面外的所有请求全部需要鉴权认证,.authenticated()表示认证之后可以访问
                 .anyRequest().authenticated();
         http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);

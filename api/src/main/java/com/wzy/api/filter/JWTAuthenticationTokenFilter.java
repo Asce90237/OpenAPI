@@ -51,17 +51,8 @@ public class JWTAuthenticationTokenFilter implements Filter {
             filterChain.doFilter(request, response);
             return;
         }
-        //验证token是否合法
-        boolean verifyToken = tokenUtils.verifyToken(authorization);
-        if (!verifyToken) {
-            throw new RuntimeException("token非法");
-        }
-        boolean verifyTime = tokenUtils.verifyTime(authorization);
-        if (!verifyTime) {
-            throw new RuntimeException("token过期");
-        }
-        //解析token
-        JWT jwt = JWTUtil.parseToken(authorization);
+        //验证token是否合法，若合法则返回jwt
+        JWT jwt = tokenUtils.ifValidReturnJWT(authorization);
         String id = (String) jwt.getPayload("id");
         //读缓存中的用户信息
         String json = stringRedisTemplate.opsForValue().get(CommonConstant.JWT_CACHE_PREFIX + id);
