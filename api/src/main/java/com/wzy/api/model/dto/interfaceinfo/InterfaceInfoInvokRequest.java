@@ -34,4 +34,14 @@ public class InterfaceInfoInvokRequest implements Serializable {
      */
     private String method;
 
+    /**
+     * 随机数
+     */
+    private String nonce;
+
+    /**
+     * 时间戳
+     */
+    private String timestamp;
+
 }

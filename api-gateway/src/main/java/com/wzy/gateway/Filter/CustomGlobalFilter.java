@@ -33,6 +33,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -143,7 +144,7 @@ public class CustomGlobalFilter implements GlobalFilter, Ordered {
         log.info("请求路径：" + path);
         log.info("请求方法：" + method);
         log.info("请求参数：" + request.getQueryParams());
-        String sourceAddress = request.getLocalAddress().getHostString();
+        String sourceAddress = request.getRemoteAddress().getAddress().getHostAddress();
         log.info("请求来源地址：" + sourceAddress);
     }
 

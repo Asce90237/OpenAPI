@@ -19,7 +19,8 @@ public class ApiClient {
 
     private String accessKey;
     private String secretKey;
-    private final String url = "https://www.openapi.love/api/main";
+//    private final String url = "https://www.openapi.love/api/main";
+    private final String url = "http://localhost:88/api/main";
 
     public ApiClient() {
     }

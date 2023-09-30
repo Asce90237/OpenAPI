@@ -1,7 +1,7 @@
 package com.wzy.api.service;
 
 
-import javax.servlet.http.HttpServletRequest;
+import com.wzy.apiclient.model.Api;
 
 /**
 * @author Asce
@@ -10,6 +10,6 @@ import javax.servlet.http.HttpServletRequest;
 */
 public interface MainService {
 
-    String mainRedirect(HttpServletRequest request);
+    String mainRedirect(Api api);
 
 }

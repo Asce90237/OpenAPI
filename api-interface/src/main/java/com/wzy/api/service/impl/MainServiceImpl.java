@@ -1,6 +1,5 @@
 package com.wzy.api.service.impl;
 
-import cn.hutool.json.JSONUtil;
 import com.wzy.api.service.MainService;
 import com.wzy.api.util.ApiUriUtil;
 import com.wzy.api.util.MethodUrlMapUtils;
@@ -9,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
 import java.util.Map;
 
@@ -31,13 +29,13 @@ public class MainServiceImpl implements MainService {
     private ApiUriUtil apiUriUtil;
 
     @Override
-    public String mainRedirect(HttpServletRequest request) {
+    public String mainRedirect(Api api) {
         // 获取接口id和url的映射关系
         Map<String, String> map = apiUriUtil.map;
         // 1、获取当前请求路径中的类名和方法
         Map<String, String> hashmap = utils.hashmap;
-        String body = request.getHeader("body");
-        Api api = JSONUtil.toBean(body, Api.class);
+//        String body = request.getHeader("body");
+//        Api api = JSONUtil.toBean(body, Api.class);
         Long interfaceId = api.getInterfaceId();
         // 接口id可能不存在或接口已下线
         String url = map.get(String.valueOf(interfaceId));
