@@ -79,7 +79,7 @@ public class GatewayConfiguration {
     private void initGatewayRules() {
         Set<GatewayFlowRule> rules = new HashSet<>();
         rules.add(new GatewayFlowRule("some_customized_api")
-            .setCount(2)
+            .setCount(3)
             .setIntervalSec(1)
             .setGrade(RuleConstant.FLOW_GRADE_QPS)
         );
