@@ -2,7 +2,7 @@
 API接口开放平台
 
 # 项目架构
-![image](https://github.com/Asce90237/OpenAPI/assets/118033421/d4740cac-cbd1-43ba-8ea0-ecd173e4d565)
+![API架构图](https://github.com/Asce90237/OpenAPI/assets/118033421/ae17cbb1-9dbe-4f30-bb86-9dc800a931f3)
 
 # 本站介绍
 
