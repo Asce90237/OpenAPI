@@ -52,7 +52,7 @@ public class MainServiceImpl implements MainService {
             //由于是object对象，所以实例化对象需要从容器中拿到
             //getMethod方法第一个参数是方法名，后面是参数的类型，可以有多个
             Method classMethod = forName.getMethod(res, Object.class);
-            //调用方法 invoke方法第一个参数是实例对象，后面是参数，可以有多个，调用方法得到的是object类型
+            //调用方法 invoke方法第一个参数是实例对象（方法的调用值），后面是参数，可以有多个，调用方法得到的是object类型
             result = classMethod.invoke(context.getBean(forName), api.getParameter());
         } catch (Exception e) {
             throw new RuntimeException(e);

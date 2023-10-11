@@ -38,15 +38,20 @@ public class ApiClient {
         } finally {
             api.setParameter(encodedParameter);
         }
-        String json = JSONUtil.toJsonStr(api);
-        String result =  HttpRequest.post(url)
-                .header("Accept","application/json;charset=UTF-8")
-                .addHeaders(getHeaders(json))
-                .charset("UTF-8")
-                .body(json)
-                .execute().body();
-        Gson gson = new Gson();
-        BaseResponse res = gson.fromJson(result, BaseResponse.class);
+        BaseResponse res = null;
+        try {
+            String json = JSONUtil.toJsonStr(api);
+            String result =  HttpRequest.post(url)
+                    .header("Accept","application/json;charset=UTF-8")
+                    .addHeaders(getHeaders(json))
+                    .charset("UTF-8")
+                    .body(json)
+                    .execute().body();
+            Gson gson = new Gson();
+            res = gson.fromJson(result, BaseResponse.class);
+        } catch (Exception e) {
+            res = new BaseResponse<>(502, null, "系统异常，请稍后再试！");
+        }
         return res;
     }
 
