@@ -1,9 +1,6 @@
 # OpenAPI
 API接口开放平台
 
-# 项目架构
-![API架构图](https://github.com/Asce90237/OpenAPI/assets/118033421/ae17cbb1-9dbe-4f30-bb86-9dc800a931f3)
-
 # 本站介绍
 
 官方文档地址：[https://docs.openapi.love](https://docs.openapi.love/)
@@ -23,3 +20,6 @@ OpenAPI 建于2023年05月16日，使用免费(目前购买功能仅为沙箱测
 注册登录后，在左侧导航里找到在线调用，即可浏览你想要的使用的接口，单击查看接口详情信息以及可调用次数。
 
 每一个接口在你注册时都为你分配了 `100` 次调用次数，而后每天你都可以登录主站领取次数，每天都可以领取 `50` 次调用次数，上限为1000。
+
+# 项目架构
+![API架构图](https://github.com/Asce90237/OpenAPI/assets/118033421/ae17cbb1-9dbe-4f30-bb86-9dc800a931f3)
