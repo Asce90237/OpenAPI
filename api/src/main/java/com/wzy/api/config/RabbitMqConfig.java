@@ -75,14 +75,4 @@ public class RabbitMqConfig {
         return new Binding("sms.delay.queue", Binding.DestinationType.QUEUE,"sms-exchange","sms.release",null);
     }
 
-
-//    @Bean
-//    @Scope("prototype")
-//    public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory) {
-//        RabbitTemplate template = new RabbitTemplate(connectionFactory);
-//        template.setMandatory(true);
-//        template.setMessageConverter(new SerializerMessageConverter());
-//        return template;
-//    }
-
 }

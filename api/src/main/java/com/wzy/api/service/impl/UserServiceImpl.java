@@ -745,6 +745,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         //不设置过期时间，这样cookie就是会话级别的，关闭浏览器就会消失
 //        cookie.setMaxAge(CookieConstant.expireTime);
         response.addCookie(cookie);
+        //todo 脱敏 将密码清除 loginUser.getUser().setUserPassword(null);
         Gson gson = new Gson();
         String json = gson.toJson(loginUser);
         stringRedisTemplate.opsForValue().set(CommonConstant.JWT_CACHE_PREFIX + loginUser.getUser().getId(), json, 1, TimeUnit.HOURS);
